@@ -10,27 +10,31 @@
     h1 { font-size: 1.4rem; margin-bottom: 8px; color: #fff; }
     .subtitle { font-size: 0.85rem; color: #888; margin-bottom: 24px; }
     #status { font-size: 0.8rem; color: #a78bfa; margin-bottom: 20px; min-height: 20px; }
-    .controls { display: flex; gap: 12px; margin-bottom: 24px; }
+    .controls { display: flex; gap: 12px; margin-bottom: 24px; align-items: center; }
     button { padding: 12px 24px; background: #a78bfa; color: #000; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 0.9rem; }
     button:hover { background: #c4b5fd; }
     button:disabled { opacity: 0.4; cursor: not-allowed; }
-    button.recording { background: #ef4444; color: #fff; animation: pulse 1.5s infinite; }
-    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
-    .drop-zone { width: 100%; max-width: 500px; min-height: 80px; border: 2px dashed #333; border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; margin-bottom: 24px; padding: 16px; font-size: 0.85rem; color: #555; }
+    button.recording { background: #ef4444; color: #fff; }
+    .rec-dot { width: 8px; height: 8px; border-radius: 50%; background: #ef4444; animation: blink 1s infinite; display: none; }
+    .rec-dot.active { display: inline-block; }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+    .drop-zone { width: 100%; max-width: 500px; min-height: 60px; border: 2px dashed #333; border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; margin-bottom: 24px; padding: 16px; font-size: 0.85rem; color: #555; }
     .drop-zone:hover { border-color: #a78bfa; }
-    .transcript { width: 100%; max-width: 500px; min-height: 120px; background: #111118; border: 1px solid #222; border-radius: 8px; padding: 16px; font-size: 0.95rem; line-height: 1.6; white-space: pre-wrap; }
+    .transcript { width: 100%; max-width: 500px; min-height: 150px; background: #111118; border: 1px solid #222; border-radius: 8px; padding: 16px; font-size: 0.95rem; line-height: 1.6; white-space: pre-wrap; }
     .transcript:empty::before { content: 'transcription will appear here...'; color: #444; }
+    .transcript .partial { color: #888; font-style: italic; }
     input[type="file"] { display: none; }
     .progress-wrap { width: 100%; max-width: 500px; margin-bottom: 16px; }
     .progress-bar { width: 100%; height: 6px; background: #222; border-radius: 3px; overflow: hidden; }
     .progress-fill { height: 100%; background: linear-gradient(90deg, #7c3aed, #a78bfa); width: 0%; transition: width 0.3s; }
     .progress-text { font-size: 0.72rem; color: #666; font-family: monospace; margin-top: 4px; text-align: center; min-height: 16px; }
     .or { color: #444; font-size: 0.8rem; margin-bottom: 12px; }
+    .chunk-info { font-size: 0.7rem; color: #555; font-family: monospace; margin-top: 8px; width: 100%; max-width: 500px; }
   </style>
 </head>
 <body>
   <h1>speech recognition</h1>
-  <p class="subtitle">record from mic or drop an audio file — transcribed locally via Whisper</p>
+  <p class="subtitle">live transcription as you speak — chunked Whisper inference in your browser</p>
   <div id="status">loading model...</div>
   <div class="progress-wrap">
     <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
@@ -38,27 +42,31 @@
   </div>
 
   <div class="controls">
-    <button id="recordBtn" disabled>hold to record</button>
+    <button id="recordBtn" disabled>start recording</button>
+    <span class="rec-dot" id="recDot"></span>
   </div>
 
-  <div class="or">or</div>
+  <div class="or">or drop an audio file</div>
 
   <div class="drop-zone" id="dropZone">
-    drop an audio file (.wav, .mp3, .m4a)
+    drop .wav, .mp3, .m4a here
   </div>
   <input type="file" id="fileInput" accept="audio/*" />
 
   <div class="transcript" id="transcript"></div>
+  <div class="chunk-info" id="chunkInfo"></div>
 
   <script type="module">
     const $ = id => document.getElementById(id);
     const status = $('status');
     const recordBtn = $('recordBtn');
+    const recDot = $('recDot');
     const dropZone = $('dropZone');
     const fileInput = $('fileInput');
     const transcript = $('transcript');
     const progress = $('progress');
     const progressText = $('progressText');
+    const chunkInfo = $('chunkInfo');
 
     function fmtSize(bytes) {
       if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(1)} GB`;
@@ -69,8 +77,21 @@
 
     const worker = new Worker('./worker.js', { type: 'module' });
     let ready = false;
-    let mediaRecorder = null;
-    let audioChunks = [];
+    let isRecording = false;
+    let mediaStream = null;
+    let audioCtx = null;
+    let sourceNode = null;
+    let processorNode = null;
+
+    // Accumulated PCM samples at 16kHz
+    let pcmBuffer = [];
+    let chunkCounter = 0;
+    const CHUNK_SECONDS = 4;  // Transcribe every N seconds
+    const SAMPLE_RATE = 16000;
+    let chunkTimer = null;
+
+    // Final transcript text (confirmed chunks)
+    let confirmedText = '';
 
     // -- Worker messages --
     worker.addEventListener('message', (e) => {
@@ -98,16 +119,29 @@
         }
 
         case 'ready':
-          status.textContent = 'ready — record or drop audio';
+          status.textContent = 'ready — click to start recording';
           ready = true;
           recordBtn.disabled = false;
           break;
 
-        case 'result':
-          status.textContent = 'done';
-          const text = msg.data?.text ?? (Array.isArray(msg.data) ? msg.data[0]?.text : JSON.stringify(msg.data));
-          transcript.textContent = text;
+        case 'result': {
+          const text = msg.data?.text ?? (Array.isArray(msg.data) ? msg.data[0]?.text : '');
+          const trimmed = (text || '').trim();
+
+          if (msg.id?.startsWith('chunk_')) {
+            // Live streaming chunk result
+            confirmedText += (confirmedText && trimmed ? ' ' : '') + trimmed;
+            transcript.innerHTML = confirmedText +
+              (isRecording ? '<span class="partial"> ...</span>' : '');
+            chunkCounter++;
+            chunkInfo.textContent = `chunks processed: ${chunkCounter}`;
+          } else if (msg.id?.startsWith('file_')) {
+            // File upload result (one-shot)
+            transcript.textContent = trimmed;
+            status.textContent = 'done';
+          }
           break;
+        }
 
         case 'error':
           status.textContent = `error: ${msg.data}`;
@@ -115,70 +149,139 @@
       }
     });
 
-    async function transcribeBlob(blob) {
+    // -- Audio processing: capture mic at 16kHz and buffer PCM --
+    async function startRecording() {
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({
+          audio: { sampleRate: SAMPLE_RATE, channelCount: 1, echoCancellation: true }
+        });
+      } catch (err) {
+        status.textContent = `mic error: ${err.message}`;
+        return;
+      }
+
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: SAMPLE_RATE });
+      sourceNode = audioCtx.createMediaStreamSource(mediaStream);
+
+      // ScriptProcessorNode for raw PCM access (simple, widely supported)
+      const bufferSize = 4096;
+      processorNode = audioCtx.createScriptProcessor(bufferSize, 1, 1);
+
+      processorNode.onaudioprocess = (e) => {
+        if (!isRecording) return;
+        const input = e.inputBuffer.getChannelData(0);
+        // Copy the samples (the buffer gets reused)
+        pcmBuffer.push(new Float32Array(input));
+      };
+
+      sourceNode.connect(processorNode);
+      processorNode.connect(audioCtx.destination);
+
+      isRecording = true;
+      pcmBuffer = [];
+      confirmedText = '';
+      chunkCounter = 0;
+      transcript.innerHTML = '<span class="partial">listening...</span>';
+      chunkInfo.textContent = '';
+
+      recordBtn.textContent = 'stop recording';
+      recordBtn.classList.add('recording');
+      recDot.classList.add('active');
+      status.textContent = 'recording — transcribing every ' + CHUNK_SECONDS + 's';
+
+      // Start the chunk timer
+      chunkTimer = setInterval(transcribeCurrentChunk, CHUNK_SECONDS * 1000);
+    }
+
+    function stopRecording() {
+      isRecording = false;
+      clearInterval(chunkTimer);
+
+      // Stop audio nodes
+      processorNode?.disconnect();
+      sourceNode?.disconnect();
+      mediaStream?.getTracks().forEach(t => t.stop());
+      audioCtx?.close();
+
+      recordBtn.textContent = 'start recording';
+      recordBtn.classList.remove('recording');
+      recDot.classList.remove('active');
+      status.textContent = 'stopped';
+
+      // Transcribe any remaining audio
+      if (pcmBuffer.length > 0) {
+        transcribeCurrentChunk();
+      }
+
+      // Clean the trailing "..." from transcript
+      setTimeout(() => {
+        transcript.textContent = confirmedText;
+      }, 2000);
+    }
+
+    function transcribeCurrentChunk() {
+      if (pcmBuffer.length === 0) return;
+
+      // Merge all buffered samples into one Float32Array
+      const totalLength = pcmBuffer.reduce((sum, buf) => sum + buf.length, 0);
+      const merged = new Float32Array(totalLength);
+      let offset = 0;
+      for (const buf of pcmBuffer) {
+        merged.set(buf, offset);
+        offset += buf.length;
+      }
+
+      // Clear the buffer for the next chunk
+      pcmBuffer = [];
+
+      // Send to worker (transfer ownership for zero-copy)
+      worker.postMessage({
+        type: 'run',
+        id: `chunk_${Date.now()}`,
+        task: 'automatic-speech-recognition',
+        input: merged,
+      }, [merged.buffer]);
+    }
+
+    // -- Toggle recording --
+    recordBtn.addEventListener('click', () => {
+      if (!ready) return;
+      if (isRecording) {
+        stopRecording();
+      } else {
+        startRecording();
+      }
+    });
+
+    // -- File drop (one-shot, not streaming) --
+    async function transcribeFile(file) {
       if (!ready) return;
       status.textContent = 'decoding audio...';
       transcript.textContent = '';
 
       try {
-        // Decode on main thread (AudioContext doesn't exist in workers)
-        const arrayBuffer = await blob.arrayBuffer();
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
-        const decoded = await audioCtx.decodeAudioData(arrayBuffer);
-
-        // Get mono channel at 16kHz (what Whisper expects)
+        const arrayBuffer = await file.arrayBuffer();
+        const ctx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: SAMPLE_RATE });
+        const decoded = await ctx.decodeAudioData(arrayBuffer);
         const pcm = decoded.getChannelData(0);
 
-        // Transfer the buffer to the worker (zero-copy)
         worker.postMessage({
           type: 'run',
-          id: `asr_${Date.now()}`,
+          id: `file_${Date.now()}`,
           task: 'automatic-speech-recognition',
           input: pcm,
         }, [pcm.buffer]);
 
         status.textContent = 'transcribing...';
-        audioCtx.close();
+        ctx.close();
       } catch (err) {
         status.textContent = `audio decode error: ${err.message}`;
       }
     }
 
-    // -- Microphone recording --
-    recordBtn.addEventListener('mousedown', async () => {
-      if (!ready) return;
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        mediaRecorder = new MediaRecorder(stream);
-        audioChunks = [];
-
-        mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
-        mediaRecorder.onstop = () => {
-          stream.getTracks().forEach(t => t.stop());
-          const blob = new Blob(audioChunks, { type: 'audio/webm' });
-          transcribeBlob(blob);
-        };
-
-        mediaRecorder.start();
-        recordBtn.textContent = 'recording...';
-        recordBtn.classList.add('recording');
-      } catch (err) {
-        status.textContent = `mic error: ${err.message}`;
-      }
-    });
-
-    recordBtn.addEventListener('mouseup', () => {
-      if (mediaRecorder && mediaRecorder.state === 'recording') {
-        mediaRecorder.stop();
-        recordBtn.textContent = 'hold to record';
-        recordBtn.classList.remove('recording');
-      }
-    });
-
-    // -- File drop --
     dropZone.addEventListener('click', () => fileInput.click());
     fileInput.addEventListener('change', (e) => {
-      if (e.target.files[0]) transcribeBlob(e.target.files[0]);
+      if (e.target.files[0]) transcribeFile(e.target.files[0]);
     });
 
     dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.style.borderColor = '#a78bfa'; });
@@ -186,7 +289,7 @@
     dropZone.addEventListener('drop', (e) => {
       e.preventDefault();
       dropZone.style.borderColor = '#333';
-      if (e.dataTransfer.files[0]) transcribeBlob(e.dataTransfer.files[0]);
+      if (e.dataTransfer.files[0]) transcribeFile(e.dataTransfer.files[0]);
     });
 
     // -- Init --
