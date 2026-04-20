@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>webml-utils examples</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #0a0a0f; color: #e0e0e0; min-height: 100vh; padding: 60px 20px; display: flex; flex-direction: column; align-items: center; }
+    h1 { font-size: 1.8rem; color: #fff; margin-bottom: 6px; }
+    .tagline { color: #888; font-size: 0.9rem; margin-bottom: 40px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; width: 100%; max-width: 640px; }
+    a.card { display: block; background: #111118; border: 1px solid #222; border-radius: 10px; padding: 20px; text-decoration: none; color: inherit; transition: border-color 0.2s, transform 0.2s; }
+    a.card:hover { border-color: #a78bfa; transform: translateY(-2px); }
+    .card h2 { font-size: 1rem; color: #fff; margin-bottom: 6px; }
+    .card p { font-size: 0.8rem; color: #888; line-height: 1.4; }
+    .card .tag { display: inline-block; font-size: 0.65rem; background: #1a1a2e; color: #a78bfa; padding: 2px 8px; border-radius: 4px; margin-top: 10px; font-family: monospace; }
+    .section { width: 100%; max-width: 640px; margin-top: 48px; }
+    .section h3 { font-size: 1rem; color: #fff; margin-bottom: 12px; }
+    .section p { font-size: 0.82rem; color: #888; line-height: 1.5; margin-bottom: 16px; }
+    pre { background: #111118; border: 1px solid #222; border-radius: 8px; padding: 16px; overflow-x: auto; font-size: 0.78rem; line-height: 1.5; color: #d1d5db; margin-bottom: 12px; }
+    code { font-family: 'SF Mono', 'Fira Code', monospace; }
+    .file-link { font-size: 0.8rem; color: #a78bfa; text-decoration: none; display: inline-block; margin-bottom: 4px; }
+    .file-link:hover { text-decoration: underline; }
+    footer { margin-top: 48px; font-size: 0.72rem; color: #444; }
+    footer a { color: #666; }
+  </style>
+</head>
+<body>
+
+  <h1>webml-utils</h1>
+  <p class="tagline">browser ML made easy — pick a demo</p>
+
+  <div class="grid">
+    <a class="card" href="device-check.html">
+      <h2>device check</h2>
+      <p>Probe WebGPU / WASM capabilities, GPU info, cached models, and VRAM estimates. No model download.</p>
+      <span class="tag">zero download</span>
+    </a>
+
+    <a class="card" href="text-generation.html">
+      <h2>text generation</h2>
+      <p>Chat with a 1.7B parameter model. Streaming tokens, TPS counter, interrupt support.</p>
+      <span class="tag">Bonsai 1.7B</span>
+    </a>
+
+    <a class="card" href="image-classification.html">
+      <h2>image classification</h2>
+      <p>Drag and drop an image to classify. Top-5 labels with confidence bars.</p>
+      <span class="tag">ViT base</span>
+    </a>
+
+    <a class="card" href="speech-recognition.html">
+      <h2>speech recognition</h2>
+      <p>Live transcription as you speak. Chunked Whisper inference every 4 seconds.</p>
+      <span class="tag">Whisper tiny</span>
+    </a>
+  </div>
+
+  <div class="section">
+    <h3>standalone JS snippets</h3>
+    <p>These show how to use webml-utils from code, without the UI. Run these in a project with <code>npm install webml-utils @huggingface/transformers</code>.</p>
+
+    <a class="file-link" href="snippets/detect-device.js">snippets/detect-device.js</a>
+    <pre><code>// Check what the user's machine can handle
+import { detectDevice, canRun, formatSize } from 'webml-utils';
+
+const device = await detectDevice();
+console.log('backend:', device.backend);
+console.log('dtype:', device.recommendedDtype);
+
+if (device.gpu) {
+  console.log('gpu:', device.gpu.vendor, device.gpu.architecture);
+  console.log('vram:', formatSize(device.gpu.vram));
+}
+
+const check = await canRun('4GB');
+console.log('can run 4GB model?', check.ok, check.reason ?? '');</code></pre>
+
+    <a class="file-link" href="snippets/check-cache.js">snippets/check-cache.js</a>
+    <pre><code>// See what's already downloaded
+import { isCached, listCachedModels, getCacheSize, formatSize } from 'webml-utils';
+
+if (await isCached('onnx-community/Bonsai-1.7B-ONNX')) {
+  console.log('model is cached, skip the progress bar');
+}
+
+const models = await listCachedModels();
+for (const m of models) {
+  console.log(`${m.modelId}: ${m.size}`);
+}
+
+console.log('total cache:', formatSize(await getCacheSize()));</code></pre>
+
+    <a class="file-link" href="snippets/text-generation.js">snippets/text-generation.js</a>
+    <pre><code>// Stream text generation
+import { ModelClient } from 'webml-utils';
+
+const client = new ModelClient(
+  new URL('webml-utils/worker', import.meta.url)
+);
+
+await client.load({
+  task: 'text-generation',
+  modelId: 'onnx-community/Bonsai-1.7B-ONNX',
+  dtype: 'q4',
+  onProgress: ({ percent }) => console.log(`loading: ${percent}%`),
+});
+
+for await (const { token, tps } of client.stream('Explain quantum computing')) {
+  process.stdout.write(token);
+}
+// tps: ~40 tok/s on M-series Mac</code></pre>
+
+    <a class="file-link" href="snippets/image-classification.js">snippets/image-classification.js</a>
+    <pre><code>// Classify an image
+import { ModelClient } from 'webml-utils';
+
+const client = new ModelClient(
+  new URL('webml-utils/worker', import.meta.url)
+);
+
+await client.load({
+  task: 'image-classification',
+  modelId: 'Xenova/vit-base-patch16-224',
+  dtype: 'fp32',
+});
+
+const labels = await client.run('image-classification', '/path/to/cat.jpg');
+console.log(labels);
+// [{ label: 'tabby cat', score: 0.98 }, ...]</code></pre>
+
+    <a class="file-link" href="snippets/multi-model.js">snippets/multi-model.js</a>
+    <pre><code>// Load multiple models at once
+import { ModelClient } from 'webml-utils';
+
+const client = new ModelClient(
+  new URL('webml-utils/worker', import.meta.url)
+);
+
+// Load text generation and embeddings side by side
+await client.load({ task: 'text-generation', modelId: 'onnx-community/Bonsai-1.7B-ONNX', dtype: 'q4' });
+await client.load({ task: 'feature-extraction', modelId: 'Xenova/all-MiniLM-L6-v2', dtype: 'fp32' });
+
+// Use them independently
+const embedding = await client.run('feature-extraction', 'Hello world');
+console.log('embedding dims:', embedding.length);
+
+for await (const { token } of client.stream('What is an embedding?')) {
+  process.stdout.write(token);
+}
+
+// Free memory when done
+client.dispose();</code></pre>
+  </div>
+
+  <footer>
+    <a href="https://github.com/hemanth/webml-utils">github</a> · MIT
+  </footer>
+
+</body>
+</html>
