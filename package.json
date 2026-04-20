@@ -1,0 +1,53 @@
+{
+  "name": "webml-utils",
+  "version": "0.1.0",
+  "description": "Framework-agnostic utilities for loading and running ML models in the browser via WebGPU/WASM",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./worker": {
+      "import": "./dist/model-worker.js",
+      "types": "./dist/model-worker.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build"
+  },
+  "keywords": [
+    "webml",
+    "webgpu",
+    "transformers",
+    "browser-ml",
+    "onnx",
+    "machine-learning",
+    "web-worker",
+    "huggingface",
+    "inference"
+  ],
+  "author": "Hemanth HM",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hemanth/webml-utils.git"
+  },
+  "peerDependencies": {
+    "@huggingface/transformers": ">=4.0.0"
+  },
+  "devDependencies": {
+    "@huggingface/transformers": "^4.1.0",
+    "@webgpu/types": "^0.1.69",
+    "typescript": "^5.7.0"
+  }
+}
