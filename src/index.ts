@@ -80,6 +80,17 @@ export {
 } from './pipelines/index.js';
 export type { PipelineDefaults } from './pipelines/index.js';
 
+// ─── Hub Search ───
+export {
+  searchModels,
+  listModelsForTask,
+  trendingModels,
+  listWebGPUModels,
+  getModelInfo,
+  WEBGPU_ORGS,
+} from './hub.js';
+export type { HubModel, SearchOptions } from './hub.js';
+
 // ─── Types ───
 export type {
   DeviceBackend,

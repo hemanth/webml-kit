@@ -62,6 +62,26 @@ const { ok, reason } = await canRun('4GB');    // human-readable
 const same = await canRun(4_000_000_000);       // raw bytes — same result
 ```
 
+### Model discovery
+
+Search the Hugging Face Hub for models that work with webml-kit. Only returns models tagged with `transformers.js`, so everything listed runs out of the box:
+
+```ts
+import { searchModels, listModelsForTask, trendingModels, listWebGPUModels } from 'webml-kit';
+
+// Search by keyword
+const results = await searchModels({ query: 'whisper', task: 'automatic-speech-recognition' });
+
+// Top models for a task
+const textModels = await listModelsForTask('text-generation', 5);
+
+// What's trending right now
+const hot = await trendingModels(5);
+
+// Only from known WebGPU-friendly orgs (onnx-community, Xenova)
+const webgpu = await listWebGPUModels({ task: 'text-generation' });
+```
+
 ### Cache visibility
 
 The worst UX in browser ML is showing "downloading 2GB..." to someone who already has the model. Now you can check:
@@ -161,6 +181,11 @@ These work without a ModelClient — useful for pre-flight checks:
 | `getCacheSize()` | Total bytes used by cached models |
 | `parseSize(input)` | Convert '4GB' / '512MB' to bytes |
 | `formatSize(bytes)` | Convert bytes to '4.0 GB' / '512.0 MB' |
+| `searchModels(options?)` | Search HF Hub for transformers.js-compatible models |
+| `listModelsForTask(task)` | Top models for a specific pipeline task |
+| `trendingModels(limit?)` | What's trending on HF Hub right now |
+| `listWebGPUModels(options?)` | Models from known WebGPU-friendly orgs |
+| `getModelInfo(modelId)` | Detailed info about a specific model |
 
 ## Supported tasks
 
