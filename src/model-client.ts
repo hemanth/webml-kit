@@ -104,17 +104,10 @@ export class ModelClient {
 
   private getWorker(): Worker {
     if (!this.worker) {
-      if (this.workerUrl) {
-        this.worker = new Worker(this.workerUrl, { type: 'module' });
-      } else {
-        // Inline worker via Blob URL
-        // Users should provide their own worker URL or use a bundler
-        // that handles `new Worker(new URL('./model-worker.js', import.meta.url))`
-        throw new Error(
-          'No worker URL provided. Pass the URL to your model-worker.js file, ' +
-          'e.g. new ModelClient(new URL("webml-kit/worker", import.meta.url))',
-        );
-      }
+      const url = this.workerUrl
+        ?? new URL('./model-worker.js', import.meta.url);
+
+      this.worker = new Worker(url, { type: 'module' });
 
       this.worker.addEventListener('message', this.handleMessage.bind(this));
       this.worker.addEventListener('error', (e) => {
