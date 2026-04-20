@@ -115,21 +115,33 @@
       }
     });
 
-    function transcribeBlob(blob) {
+    async function transcribeBlob(blob) {
       if (!ready) return;
-      status.textContent = 'transcribing...';
+      status.textContent = 'decoding audio...';
       transcript.textContent = '';
 
-      const reader = new FileReader();
-      reader.onload = () => {
+      try {
+        // Decode on main thread (AudioContext doesn't exist in workers)
+        const arrayBuffer = await blob.arrayBuffer();
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+        const decoded = await audioCtx.decodeAudioData(arrayBuffer);
+
+        // Get mono channel at 16kHz (what Whisper expects)
+        const pcm = decoded.getChannelData(0);
+
+        // Transfer the buffer to the worker (zero-copy)
         worker.postMessage({
           type: 'run',
           id: `asr_${Date.now()}`,
           task: 'automatic-speech-recognition',
-          input: reader.result, // data URL
-        });
-      };
-      reader.readAsDataURL(blob);
+          input: pcm,
+        }, [pcm.buffer]);
+
+        status.textContent = 'transcribing...';
+        audioCtx.close();
+      } catch (err) {
+        status.textContent = `audio decode error: ${err.message}`;
+      }
     }
 
     // -- Microphone recording --
