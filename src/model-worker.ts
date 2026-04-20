@@ -62,11 +62,16 @@ async function checkDevice(): Promise<void> {
       if (adapter) {
         backend = 'webgpu';
         const info = adapter.info;
+        const vram = Number(adapter.limits?.maxBufferSize ?? 0);
+        const fmtVram = vram >= 1024 ** 3
+          ? `${(vram / 1024 ** 3).toFixed(1)} GB`
+          : `${(vram / 1024 ** 2).toFixed(1)} MB`;
         gpu = {
           vendor: info?.vendor ?? 'unknown',
           architecture: info?.architecture ?? 'unknown',
           description: info?.description ?? 'unknown',
-          vram: Number(adapter.limits?.maxBufferSize ?? 0),
+          vram,
+          vramFormatted: fmtVram,
         };
       }
     }

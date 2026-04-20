@@ -1,6 +1,6 @@
 # webml-utils
 
-Framework-agnostic utilities for loading and running ML models in the browser via WebGPU/WASM.
+> Framework-agnostic utilities for loading and running ML models in the browser via WebGPU/WASM.
 
 If you've ever built a browser-ML demo, you know the drill: copy 150 lines of Web Worker boilerplate from the last project, wire up `postMessage`, add progress reporting, handle the GPU vanishing mid-inference, and pray the model is cached so your user doesn't wait 3 minutes. Every. Single. Time.
 
@@ -52,9 +52,10 @@ Figures out what your user's machine can handle and picks a reasonable quantizat
 import { detectDevice, canRun } from 'webml-utils';
 
 const info = await detectDevice();
-// { backend: 'webgpu', gpu: { vendor: 'apple', vram: 8589934592 }, recommendedDtype: 'fp16' }
+// { backend: 'webgpu', gpu: { vendor: 'apple', vram: 8589934592, vramFormatted: '8.0 GB' }, recommendedDtype: 'fp16' }
 
-const { ok, reason } = await canRun('4GB'); // Can we fit a 4GB model?
+const { ok, reason } = await canRun('4GB');    // human-readable
+const same = await canRun(4_000_000_000);       // raw bytes — same result
 ```
 
 ### Cache visibility
@@ -90,7 +91,7 @@ const { text, tps, numTokens } = await client.generate('Hello!');
 
 ### GPU recovery
 
-GPUs disappear. It happens — TDR resets, VRAM pressure, mobile browsers reclaiming resources. Without handling this, the user has to reload the page. This recovers automatically with backoff:
+GPUs disappear. It happens: TDR resets, VRAM pressure, mobile browsers reclaiming resources. Without handling this, the user has to reload the page. This recovers automatically with backoff:
 
 ```ts
 import { GPURecovery } from 'webml-utils';

@@ -8,6 +8,8 @@ export interface GPUInfo {
   description: string;
   /** Estimated VRAM in bytes (0 if unknown) */
   vram: number;
+  /** Human-readable VRAM (e.g. '8.0 GB') */
+  vramFormatted: string;
 }
 
 export interface DeviceInfo {

@@ -42,12 +42,15 @@ export async function getGPUInfo(adapter: GPUAdapter): Promise<GPUInfo> {
   const info = adapter.info ?? (adapter as unknown as { requestAdapterInfo?: () => Promise<GPUAdapterInfo> }).requestAdapterInfo?.();
   const resolved = info instanceof Promise ? await info : info;
 
+  // maxBufferSize gives a rough VRAM lower-bound
+  const vram = Number(adapter.limits?.maxBufferSize ?? 0);
+
   return {
     vendor: resolved?.vendor ?? 'unknown',
     architecture: resolved?.architecture ?? 'unknown',
     description: resolved?.description ?? 'unknown',
-    // maxBufferSize gives a rough VRAM lower-bound
-    vram: Number(adapter.limits?.maxBufferSize ?? 0),
+    vram,
+    vramFormatted: formatSize(vram),
   };
 }
 

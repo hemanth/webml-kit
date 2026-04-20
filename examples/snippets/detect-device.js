@@ -8,7 +8,7 @@
  * model selection UI or progress bars.
  */
 
-import { detectDevice, canRun, formatSize } from 'webml-utils';
+import { detectDevice, canRun } from 'webml-utils';
 
 const device = await detectDevice();
 
@@ -18,14 +18,13 @@ console.log('dtype:', device.recommendedDtype);   // 'fp16' | 'q8' | 'q4'
 if (device.gpu) {
   console.log('gpu vendor:', device.gpu.vendor);
   console.log('gpu arch:', device.gpu.architecture);
-  console.log('vram:', formatSize(device.gpu.vram));
+  console.log('vram:', device.gpu.vramFormatted);  // '8.0 GB'
 }
 
-// Can a 4GB model fit?
+// canRun accepts both human-readable strings and raw byte counts
 const check = await canRun('4GB');
 console.log('can run 4GB model?', check.ok);
 if (!check.ok) console.log('reason:', check.reason);
 
-// Can a 512MB model fit?
-const small = await canRun('512MB');
-console.log('can run 512MB model?', small.ok);
+const same = await canRun(4_000_000_000);          // same as above
+console.log('same result:', same.ok);
