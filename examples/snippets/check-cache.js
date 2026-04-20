@@ -5,7 +5,7 @@
  * bar or jump straight to inference.
  */
 
-import { isCached, listCachedModels, getCacheSize, formatSize } from 'webml-utils';
+import { isCached, listCachedModels, getCacheSize, formatSize } from 'webml-kit';
 
 // Check a specific model
 const cached = await isCached('onnx-community/Bonsai-1.7B-ONNX');

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>webml-utils: text generation</title>
+  <title>webml-kit: text generation</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: system-ui, -apple-system, sans-serif; background: #0a0a0f; color: #e0e0e0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 40px 20px; }
@@ -32,7 +32,7 @@
 </head>
 <body>
   <h1>text generation</h1>
-  <p class="subtitle">powered by webml-utils + transformers.js + WebGPU</p>
+  <p class="subtitle">powered by webml-kit + transformers.js + WebGPU</p>
   <div id="device-info"></div>
   <div id="status">checking device...</div>
   <div class="progress-wrap">
@@ -50,12 +50,12 @@
   </div>
 
   <script type="module">
-    // In a real project you'd import from 'webml-utils'.
+    // In a real project you'd import from 'webml-kit'.
     // Here we import from the built dist for a zero-build demo.
     // Adjust the path to wherever your dist lives.
     //
-    // import { ModelClient } from 'webml-utils';
-    // const client = new ModelClient(new URL('webml-utils/worker', import.meta.url));
+    // import { ModelClient } from 'webml-kit';
+    // const client = new ModelClient(new URL('webml-kit/worker', import.meta.url));
 
     // For this standalone example, we inline the essentials.
     // Replace this section with the imports above when using npm.

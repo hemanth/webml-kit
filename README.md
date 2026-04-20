@@ -1,4 +1,4 @@
-# webml-utils
+# webml-kit
 
 > Framework-agnostic utilities for loading and running ML models in the browser via WebGPU/WASM.
 
@@ -9,17 +9,17 @@ This library does that part for you. It wraps [`@huggingface/transformers`](http
 ## Install
 
 ```bash
-npm install webml-utils @huggingface/transformers
+npm install webml-kit @huggingface/transformers
 ```
 
 ## Quick start
 
 ```ts
-import { ModelClient } from 'webml-utils';
+import { ModelClient } from 'webml-kit';
 
 // Point to the worker file
 const client = new ModelClient(
-  new URL('webml-utils/worker', import.meta.url)
+  new URL('webml-kit/worker', import.meta.url)
 );
 
 // What can this machine do?
@@ -49,7 +49,7 @@ for await (const { token, tps } of client.stream('Tell me a joke')) {
 Figures out what your user's machine can handle and picks a reasonable quantization level:
 
 ```ts
-import { detectDevice, canRun } from 'webml-utils';
+import { detectDevice, canRun } from 'webml-kit';
 
 const info = await detectDevice();
 // { backend: 'webgpu', gpu: { vendor: 'apple', vram: 8589934592, vramFormatted: '8.0 GB' }, recommendedDtype: 'fp16' }
@@ -63,7 +63,7 @@ const same = await canRun(4_000_000_000);       // raw bytes — same result
 The worst UX in browser ML is showing "downloading 2GB..." to someone who already has the model. Now you can check:
 
 ```ts
-import { isCached, listCachedModels, getCacheSize, clearCache } from 'webml-utils';
+import { isCached, listCachedModels, getCacheSize, clearCache } from 'webml-kit';
 
 if (await isCached('onnx-community/Bonsai-1.7B-ONNX')) {
   // Skip the progress bar entirely
@@ -94,7 +94,7 @@ const { text, tps, numTokens } = await client.generate('Hello!');
 GPUs disappear. It happens: TDR resets, VRAM pressure, mobile browsers reclaiming resources. Without handling this, the user has to reload the page. This recovers automatically with backoff:
 
 ```ts
-import { GPURecovery } from 'webml-utils';
+import { GPURecovery } from 'webml-kit';
 
 const recovery = new GPURecovery({ maxRetries: 3, baseDelayMs: 1000 });
 recovery.on('lost', ({ reason }) => showBanner('GPU lost: ' + reason));

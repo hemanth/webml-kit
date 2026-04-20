@@ -1,12 +1,12 @@
 /**
- * webml-utils — Browser ML Made Easy
+ * webml-kit — Browser ML Made Easy
  *
  * Framework-agnostic utilities for loading and running ML models
  * in the browser via WebGPU/WASM, powered by @huggingface/transformers.
  *
  * @example
  * ```ts
- * import { ModelClient, detectDevice, isCached } from 'webml-utils';
+ * import { ModelClient, detectDevice, isCached } from 'webml-kit';
  *
  * // Check device
  * const device = await detectDevice();

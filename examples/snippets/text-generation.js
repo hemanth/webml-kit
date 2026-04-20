@@ -5,10 +5,10 @@
  * stream tokens as they're generated.
  */
 
-import { ModelClient } from 'webml-utils';
+import { ModelClient } from 'webml-kit';
 
 const client = new ModelClient(
-  new URL('webml-utils/worker', import.meta.url)
+  new URL('webml-kit/worker', import.meta.url)
 );
 
 // Load model with progress

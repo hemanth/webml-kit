@@ -8,7 +8,7 @@
  * model selection UI or progress bars.
  */
 
-import { detectDevice, canRun } from 'webml-utils';
+import { detectDevice, canRun } from 'webml-kit';
 
 const device = await detectDevice();
 

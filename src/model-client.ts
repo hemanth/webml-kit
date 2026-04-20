@@ -5,7 +5,7 @@
  * AsyncIterable token streaming, and typed events.
  *
  * ```ts
- * import { ModelClient } from 'webml-utils';
+ * import { ModelClient } from 'webml-kit';
  *
  * const client = new ModelClient();
  *
@@ -112,7 +112,7 @@ export class ModelClient {
         // that handles `new Worker(new URL('./model-worker.js', import.meta.url))`
         throw new Error(
           'No worker URL provided. Pass the URL to your model-worker.js file, ' +
-          'e.g. new ModelClient(new URL("webml-utils/worker", import.meta.url))',
+          'e.g. new ModelClient(new URL("webml-kit/worker", import.meta.url))',
         );
       }
 

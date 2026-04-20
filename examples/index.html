@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>webml-utils examples</title>
+  <title>webml-kit examples</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: system-ui, -apple-system, sans-serif; background: #0a0a0f; color: #e0e0e0; min-height: 100vh; padding: 60px 20px; display: flex; flex-direction: column; align-items: center; }
@@ -28,7 +28,7 @@
 </head>
 <body>
 
-  <h1>webml-utils</h1>
+  <h1>webml-kit</h1>
   <p class="tagline">browser ML made easy — pick a demo</p>
 
   <div class="grid">
@@ -59,11 +59,11 @@
 
   <div class="section">
     <h3>standalone JS snippets</h3>
-    <p>These show how to use webml-utils from code, without the UI. Run these in a project with <code>npm install webml-utils @huggingface/transformers</code>.</p>
+    <p>These show how to use webml-kit from code, without the UI. Run these in a project with <code>npm install webml-kit @huggingface/transformers</code>.</p>
 
     <a class="file-link" href="snippets/detect-device.js">snippets/detect-device.js</a>
     <pre><code>// Check what the user's machine can handle
-import { detectDevice, canRun, formatSize } from 'webml-utils';
+import { detectDevice, canRun, formatSize } from 'webml-kit';
 
 const device = await detectDevice();
 console.log('backend:', device.backend);
@@ -79,7 +79,7 @@ console.log('can run 4GB model?', check.ok, check.reason ?? '');</code></pre>
 
     <a class="file-link" href="snippets/check-cache.js">snippets/check-cache.js</a>
     <pre><code>// See what's already downloaded
-import { isCached, listCachedModels, getCacheSize, formatSize } from 'webml-utils';
+import { isCached, listCachedModels, getCacheSize, formatSize } from 'webml-kit';
 
 if (await isCached('onnx-community/Bonsai-1.7B-ONNX')) {
   console.log('model is cached, skip the progress bar');
@@ -94,10 +94,10 @@ console.log('total cache:', formatSize(await getCacheSize()));</code></pre>
 
     <a class="file-link" href="snippets/text-generation.js">snippets/text-generation.js</a>
     <pre><code>// Stream text generation
-import { ModelClient } from 'webml-utils';
+import { ModelClient } from 'webml-kit';
 
 const client = new ModelClient(
-  new URL('webml-utils/worker', import.meta.url)
+  new URL('webml-kit/worker', import.meta.url)
 );
 
 await client.load({
@@ -114,10 +114,10 @@ for await (const { token, tps } of client.stream('Explain quantum computing')) {
 
     <a class="file-link" href="snippets/image-classification.js">snippets/image-classification.js</a>
     <pre><code>// Classify an image
-import { ModelClient } from 'webml-utils';
+import { ModelClient } from 'webml-kit';
 
 const client = new ModelClient(
-  new URL('webml-utils/worker', import.meta.url)
+  new URL('webml-kit/worker', import.meta.url)
 );
 
 await client.load({
@@ -132,10 +132,10 @@ console.log(labels);
 
     <a class="file-link" href="snippets/multi-model.js">snippets/multi-model.js</a>
     <pre><code>// Load multiple models at once
-import { ModelClient } from 'webml-utils';
+import { ModelClient } from 'webml-kit';
 
 const client = new ModelClient(
-  new URL('webml-utils/worker', import.meta.url)
+  new URL('webml-kit/worker', import.meta.url)
 );
 
 // Load text generation and embeddings side by side
@@ -155,7 +155,7 @@ client.dispose();</code></pre>
   </div>
 
   <footer>
-    <a href="https://github.com/hemanth/webml-utils">github</a> · MIT
+    <a href="https://github.com/hemanth/webml-kit">github</a> · MIT
   </footer>
 
 </body>

@@ -1,5 +1,5 @@
 {
-  "name": "webml-utils",
+  "name": "webml-kit",
   "version": "0.1.0",
   "description": "Framework-agnostic utilities for loading and running ML models in the browser via WebGPU/WASM",
   "type": "module",
@@ -42,7 +42,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/hemanth/webml-utils.git"
+    "url": "https://github.com/hemanth/webml-kit.git"
   },
   "peerDependencies": {
     "@huggingface/transformers": ">=4.0.0"

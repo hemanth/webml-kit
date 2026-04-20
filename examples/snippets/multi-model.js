@@ -1,15 +1,15 @@
 /**
  * Load multiple models and use them independently.
  *
- * webml-utils manages a pipeline cache in the worker,
+ * webml-kit manages a pipeline cache in the worker,
  * so different tasks share the same worker thread
  * without interfering with each other.
  */
 
-import { ModelClient } from 'webml-utils';
+import { ModelClient } from 'webml-kit';
 
 const client = new ModelClient(
-  new URL('webml-utils/worker', import.meta.url)
+  new URL('webml-kit/worker', import.meta.url)
 );
 
 // Load a text model and an embedding model
