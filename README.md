@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="logo.png" alt="webml-kit" width="200" />
+</p>
+
 # webml-kit
 
 > Framework-agnostic utilities for loading and running ML models in the browser via WebGPU/WASM.
