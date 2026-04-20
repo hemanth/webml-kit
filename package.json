@@ -1,6 +1,6 @@
 {
   "name": "webml-kit",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Framework-agnostic utilities for loading and running ML models in the browser via WebGPU/WASM",
   "type": "module",
   "main": "./dist/index.js",

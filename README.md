@@ -21,10 +21,9 @@ npm install webml-kit
 ```ts
 import { ModelClient } from 'webml-kit';
 
-// Point to the worker file
-const client = new ModelClient(
-  new URL('webml-kit/worker', import.meta.url)
-);
+const client = new ModelClient();
+// or with an explicit worker path:
+// const client = new ModelClient(new URL('webml-kit/worker', import.meta.url));
 
 // What can this machine do?
 const device = await client.detect();
