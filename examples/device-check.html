@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>webml-utils: device check</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #0a0a0f; color: #e0e0e0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 40px 20px; }
+    h1 { font-size: 1.4rem; margin-bottom: 8px; color: #fff; }
+    .subtitle { font-size: 0.85rem; color: #888; margin-bottom: 32px; }
+    .card { width: 100%; max-width: 480px; background: #111118; border: 1px solid #222; border-radius: 12px; padding: 24px; margin-bottom: 16px; }
+    .card h2 { font-size: 1rem; color: #a78bfa; margin-bottom: 12px; }
+    .row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #1a1a1a; font-size: 0.85rem; }
+    .row:last-child { border: none; }
+    .row .key { color: #888; }
+    .row .val { color: #fff; font-family: monospace; }
+    .row .val.ok { color: #4ade80; }
+    .row .val.no { color: #f87171; }
+    .models { margin-top: 16px; }
+    .model { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #1a1a1a; font-size: 0.8rem; }
+    .model:last-child { border: none; }
+    .model .name { color: #d1d5db; flex: 1; }
+    .model .fit { font-family: monospace; width: 50px; text-align: right; }
+    .loading { color: #555; font-style: italic; font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+  <h1>device check</h1>
+  <p class="subtitle">what can this machine run? no downloads, just a quick probe.</p>
+
+  <div class="card" id="deviceCard">
+    <h2>device</h2>
+    <div class="loading">detecting...</div>
+  </div>
+
+  <div class="card" id="cacheCard">
+    <h2>cached models</h2>
+    <div class="loading">checking cache...</div>
+  </div>
+
+  <div class="card" id="modelsCard">
+    <h2>can it run these?</h2>
+    <div class="loading">estimating...</div>
+  </div>
+
+  <script type="module">
+    // These would normally be:
+    //   import { detectDevice, canRun, ... } from 'webml-utils';
+    //
+    // For this standalone demo we do the detection inline since
+    // these functions don't need a worker.
+
+    const $ = id => document.getElementById(id);
+
+    // --- Device detection (inline version of device.ts) ---
+    async function detectDevice() {
+      let backend = 'cpu';
+      let gpu = null;
+
+      try {
+        if ('gpu' in navigator) {
+          const adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
+          if (adapter) {
+            backend = 'webgpu';
+            const info = adapter.info;
+            gpu = {
+              vendor: info?.vendor ?? 'unknown',
+              architecture: info?.architecture ?? 'unknown',
+              description: info?.description ?? 'unknown',
+              vram: Number(adapter.limits?.maxBufferSize ?? 0),
+            };
+          }
+        }
+      } catch {}
+
+      if (backend === 'cpu' && typeof WebAssembly !== 'undefined') backend = 'wasm';
+
+      const vram = gpu?.vram ?? 0;
+      const recommendedDtype = vram >= 8e9 ? 'fp16' : vram >= 4e9 ? 'q8' : 'q4';
+
+      return { backend, gpu, recommendedDtype };
+    }
+
+    function formatSize(bytes) {
+      if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(1)} GB`;
+      if (bytes >= 1024 ** 2) return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
+      if (bytes >= 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+      return `${bytes} B`;
+    }
+
+    function row(key, val, cls = '') {
+      return `<div class="row"><span class="key">${key}</span><span class="val ${cls}">${val}</span></div>`;
+    }
+
+    // --- Run checks ---
+    (async () => {
+      // Device
+      const device = await detectDevice();
+      const hasGPU = device.backend === 'webgpu';
+
+      $('deviceCard').innerHTML = `
+        <h2>device</h2>
+        ${row('backend', device.backend, hasGPU ? 'ok' : '')}
+        ${row('WebGPU', hasGPU ? 'yes' : 'no', hasGPU ? 'ok' : 'no')}
+        ${row('WebAssembly', typeof WebAssembly !== 'undefined' ? 'yes' : 'no', 'ok')}
+        ${device.gpu ? `
+          ${row('GPU vendor', device.gpu.vendor)}
+          ${row('GPU arch', device.gpu.architecture)}
+          ${row('max buffer', formatSize(device.gpu.vram))}
+        ` : ''}
+        ${row('recommended dtype', device.recommendedDtype)}
+      `;
+
+      // Cache
+      let cacheHtml = '<h2>cached models</h2>';
+      try {
+        if (typeof caches !== 'undefined') {
+          const keys = await caches.keys();
+          const hfCaches = keys.filter(k => k.startsWith('transformers-cache'));
+          if (hfCaches.length === 0) {
+            cacheHtml += '<div class="loading">no cached models found</div>';
+          } else {
+            const estimate = await navigator.storage?.estimate();
+            if (estimate?.usage) {
+              cacheHtml += row('total storage used', formatSize(estimate.usage));
+            }
+            cacheHtml += `<div class="loading">${hfCaches.length} cache bucket(s) found</div>`;
+          }
+        } else {
+          cacheHtml += '<div class="loading">Cache API not available</div>';
+        }
+      } catch {
+        cacheHtml += '<div class="loading">could not check cache</div>';
+      }
+      $('cacheCard').innerHTML = cacheHtml;
+
+      // Model fit estimates
+      const testModels = [
+        { name: 'Whisper tiny (q8)', size: 150 * 1024 ** 2 },
+        { name: 'ViT base (fp32)', size: 350 * 1024 ** 2 },
+        { name: 'Bonsai 1.7B (q1)', size: 420 * 1024 ** 2 },
+        { name: 'Llama 3.2 1B (q4)', size: 800 * 1024 ** 2 },
+        { name: 'Llama 3.2 3B (q4)', size: 2 * 1024 ** 3 },
+        { name: 'Llama 3.1 8B (q4)', size: 4.5 * 1024 ** 3 },
+      ];
+
+      const vram = device.gpu?.vram ?? 0;
+      const available = hasGPU ? vram - 512 * 1024 ** 2 : Infinity;
+
+      let modelsHtml = '<h2>can it run these?</h2><div class="models">';
+      for (const m of testModels) {
+        const fits = hasGPU ? m.size < available : true; // WASM has no hard limit
+        modelsHtml += `
+          <div class="model">
+            <span class="name">${m.name} (${formatSize(m.size)})</span>
+            <span class="fit ${fits ? 'ok' : 'no'}">${fits ? 'yes' : 'no'}</span>
+          </div>
+        `;
+      }
+      modelsHtml += '</div>';
+      $('modelsCard').innerHTML = modelsHtml;
+    })();
+  </script>
+</body>
+</html>

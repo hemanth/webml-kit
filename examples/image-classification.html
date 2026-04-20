@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>webml-utils: image classification</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #0a0a0f; color: #e0e0e0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 40px 20px; }
+    h1 { font-size: 1.4rem; margin-bottom: 8px; color: #fff; }
+    .subtitle { font-size: 0.85rem; color: #888; margin-bottom: 24px; }
+    #status { font-size: 0.8rem; color: #a78bfa; margin-bottom: 16px; min-height: 20px; }
+    .drop-zone { width: 100%; max-width: 500px; min-height: 250px; border: 2px dashed #333; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: border-color 0.2s; margin-bottom: 20px; padding: 20px; }
+    .drop-zone:hover, .drop-zone.over { border-color: #a78bfa; }
+    .drop-zone img { max-width: 100%; max-height: 300px; border-radius: 8px; margin-bottom: 12px; }
+    .drop-text { color: #555; font-size: 0.85rem; }
+    .results { width: 100%; max-width: 500px; }
+    .result-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+    .result-label { flex: 1; font-size: 0.85rem; }
+    .result-bar { flex: 2; height: 20px; background: #1a1a2e; border-radius: 4px; overflow: hidden; }
+    .result-fill { height: 100%; background: linear-gradient(90deg, #7c3aed, #a78bfa); border-radius: 4px; transition: width 0.5s ease; }
+    .result-score { font-size: 0.75rem; color: #888; width: 50px; text-align: right; font-family: monospace; }
+    input[type="file"] { display: none; }
+  </style>
+</head>
+<body>
+  <h1>image classification</h1>
+  <p class="subtitle">drag an image or click to classify — runs entirely in your browser</p>
+  <div id="status">loading model...</div>
+
+  <div class="drop-zone" id="dropZone">
+    <div class="drop-text">drop an image here or click to browse</div>
+  </div>
+  <input type="file" id="fileInput" accept="image/*" />
+
+  <div class="results" id="results"></div>
+
+  <script type="module">
+    const $ = id => document.getElementById(id);
+    const status = $('status');
+    const dropZone = $('dropZone');
+    const fileInput = $('fileInput');
+    const results = $('results');
+
+    const worker = new Worker('./worker.js', { type: 'module' });
+    let ready = false;
+
+    // -- Worker messages --
+    worker.addEventListener('message', (e) => {
+      const msg = e.data;
+
+      switch (msg.type) {
+        case 'device-info':
+          worker.postMessage({
+            type: 'load',
+            config: {
+              task: 'image-classification',
+              modelId: 'Xenova/vit-base-patch16-224',
+              dtype: 'fp32',
+              device: msg.data.backend,
+            }
+          });
+          break;
+
+        case 'progress':
+          status.textContent = `${msg.data.status}: ${msg.data.percent}%`;
+          break;
+
+        case 'ready':
+          status.textContent = 'ready — drop an image';
+          ready = true;
+          break;
+
+        case 'result':
+          status.textContent = 'done';
+          showResults(msg.data);
+          break;
+
+        case 'error':
+          status.textContent = `error: ${msg.data}`;
+          break;
+      }
+    });
+
+    function showResults(data) {
+      // transformers.js returns an array of { label, score }
+      const items = Array.isArray(data) ? data : [data];
+      results.innerHTML = items
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 5)
+        .map(item => `
+          <div class="result-row">
+            <div class="result-label">${item.label}</div>
+            <div class="result-bar">
+              <div class="result-fill" style="width: ${(item.score * 100).toFixed(1)}%"></div>
+            </div>
+            <div class="result-score">${(item.score * 100).toFixed(1)}%</div>
+          </div>
+        `).join('');
+    }
+
+    function classifyImage(file) {
+      if (!ready) return;
+      status.textContent = 'classifying...';
+      results.innerHTML = '';
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        // Show preview
+        dropZone.innerHTML = `<img src="${reader.result}" alt="uploaded image" />`;
+
+        worker.postMessage({
+          type: 'run',
+          id: `cls_${Date.now()}`,
+          task: 'image-classification',
+          input: reader.result, // data URL
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // -- Drop zone --
+    dropZone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files[0]) classifyImage(e.target.files[0]);
+    });
+
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('over');
+    });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('over'));
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('over');
+      if (e.dataTransfer.files[0]) classifyImage(e.dataTransfer.files[0]);
+    });
+
+    // -- Init --
+    worker.postMessage({ type: 'check' });
+  </script>
+</body>
+</html>

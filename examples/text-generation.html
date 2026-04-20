@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>webml-utils: text generation</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #0a0a0f; color: #e0e0e0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 40px 20px; }
+    h1 { font-size: 1.4rem; margin-bottom: 8px; color: #fff; }
+    .subtitle { font-size: 0.85rem; color: #888; margin-bottom: 24px; }
+    #status { font-size: 0.8rem; color: #a78bfa; margin-bottom: 16px; min-height: 20px; }
+    #device-info { font-size: 0.75rem; color: #666; margin-bottom: 20px; font-family: monospace; }
+    .chat { width: 100%; max-width: 600px; flex: 1; display: flex; flex-direction: column; gap: 12px; }
+    .messages { flex: 1; min-height: 300px; max-height: 500px; overflow-y: auto; border: 1px solid #222; border-radius: 8px; padding: 16px; background: #111118; }
+    .msg { margin-bottom: 12px; line-height: 1.5; }
+    .msg.user { color: #93c5fd; }
+    .msg.assistant { color: #d1d5db; }
+    .msg .label { font-size: 0.7rem; text-transform: uppercase; color: #555; margin-bottom: 2px; }
+    .input-row { display: flex; gap: 8px; }
+    input { flex: 1; padding: 10px 14px; background: #15151f; border: 1px solid #333; border-radius: 6px; color: #fff; font-size: 0.9rem; outline: none; }
+    input:focus { border-color: #a78bfa; }
+    button { padding: 10px 20px; background: #a78bfa; color: #000; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.85rem; }
+    button:hover { background: #c4b5fd; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    .stats { font-size: 0.7rem; color: #555; margin-top: 4px; font-family: monospace; }
+    .progress-bar { width: 100%; max-width: 600px; height: 4px; background: #222; border-radius: 2px; overflow: hidden; margin-bottom: 12px; }
+    .progress-fill { height: 100%; background: #a78bfa; width: 0%; transition: width 0.3s; }
+  </style>
+</head>
+<body>
+  <h1>text generation</h1>
+  <p class="subtitle">powered by webml-utils + transformers.js + WebGPU</p>
+  <div id="device-info"></div>
+  <div id="status">checking device...</div>
+  <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+
+  <div class="chat">
+    <div class="messages" id="messages"></div>
+    <div class="input-row">
+      <input id="input" type="text" placeholder="say something..." disabled />
+      <button id="send" disabled>send</button>
+      <button id="stop" disabled>stop</button>
+    </div>
+  </div>
+
+  <script type="module">
+    // In a real project you'd import from 'webml-utils'.
+    // Here we import from the built dist for a zero-build demo.
+    // Adjust the path to wherever your dist lives.
+    //
+    // import { ModelClient } from 'webml-utils';
+    // const client = new ModelClient(new URL('webml-utils/worker', import.meta.url));
+
+    // For this standalone example, we inline the essentials.
+    // Replace this section with the imports above when using npm.
+
+    const $ = id => document.getElementById(id);
+    const status = $('status');
+    const progress = $('progress');
+    const messages = $('messages');
+    const input = $('input');
+    const sendBtn = $('send');
+    const stopBtn = $('stop');
+    const deviceInfo = $('device-info');
+
+    // -- Worker setup --
+    // Point this at your built model-worker.js
+    const worker = new Worker('./worker.js', { type: 'module' });
+
+    let generating = false;
+    let currentOutput = '';
+    const chatHistory = [];
+
+    function addMessage(role, text) {
+      const div = document.createElement('div');
+      div.className = `msg ${role}`;
+      div.innerHTML = `<div class="label">${role}</div>${text}`;
+      messages.appendChild(div);
+      messages.scrollTop = messages.scrollHeight;
+      return div;
+    }
+
+    // -- Worker messages --
+    worker.addEventListener('message', (e) => {
+      const msg = e.data;
+
+      switch (msg.type) {
+        case 'device-info':
+          deviceInfo.textContent = `backend: ${msg.data.backend} | dtype: ${msg.data.recommendedDtype}` +
+            (msg.data.gpu ? ` | gpu: ${msg.data.gpu.vendor}` : '');
+          status.textContent = 'loading model...';
+          worker.postMessage({
+            type: 'load',
+            config: {
+              task: 'text-generation',
+              modelId: 'onnx-community/Bonsai-1.7B-ONNX',
+              dtype: 'q1',
+              device: msg.data.backend,
+            }
+          });
+          break;
+
+        case 'progress':
+          status.textContent = `${msg.data.status}: ${msg.data.percent}%`;
+          progress.style.width = `${msg.data.percent}%`;
+          break;
+
+        case 'ready':
+          status.textContent = 'ready';
+          progress.style.width = '100%';
+          input.disabled = false;
+          sendBtn.disabled = false;
+          input.focus();
+          break;
+
+        case 'token':
+          if (!generating) return;
+          currentOutput += msg.data.token;
+          if (window._assistantDiv) {
+            window._assistantDiv.innerHTML =
+              `<div class="label">assistant</div>${currentOutput}<span class="stats">${msg.data.tps.toFixed(1)} tok/s</span>`;
+            messages.scrollTop = messages.scrollHeight;
+          }
+          break;
+
+        case 'result':
+          generating = false;
+          sendBtn.disabled = false;
+          stopBtn.disabled = true;
+          input.disabled = false;
+          input.focus();
+          chatHistory.push({ role: 'assistant', content: currentOutput });
+          break;
+
+        case 'error':
+          status.textContent = `error: ${msg.data}`;
+          generating = false;
+          sendBtn.disabled = false;
+          stopBtn.disabled = true;
+          break;
+      }
+    });
+
+    // -- Send --
+    function send() {
+      const text = input.value.trim();
+      if (!text || generating) return;
+
+      addMessage('user', text);
+      chatHistory.push({ role: 'user', content: text });
+      input.value = '';
+
+      currentOutput = '';
+      window._assistantDiv = addMessage('assistant', '...');
+      generating = true;
+      sendBtn.disabled = true;
+      stopBtn.disabled = false;
+      input.disabled = true;
+
+      worker.postMessage({
+        type: 'run',
+        id: `gen_${Date.now()}`,
+        task: 'text-generation',
+        input: chatHistory,
+      });
+    }
+
+    sendBtn.addEventListener('click', send);
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') send(); });
+    stopBtn.addEventListener('click', () => { worker.postMessage({ type: 'interrupt' }); });
+
+    // -- Init --
+    worker.postMessage({ type: 'check' });
+  </script>
+</body>
+</html>
