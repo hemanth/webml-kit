@@ -1,8 +1,10 @@
 # webml-utils
 
-> Browser ML made easy. Framework-agnostic utilities for loading and running ML models in the browser via WebGPU/WASM.
+Framework-agnostic utilities for loading and running ML models in the browser via WebGPU/WASM.
 
-Wraps [`@huggingface/transformers`](https://huggingface.co/docs/transformers.js) and eliminates the boilerplate you copy into every project: Web Worker setup, model caching, progress reporting, token streaming, GPU recovery, and device detection.
+If you've ever built a browser-ML demo, you know the drill: copy 150 lines of Web Worker boilerplate from the last project, wire up `postMessage`, add progress reporting, handle the GPU vanishing mid-inference, and pray the model is cached so your user doesn't wait 3 minutes. Every. Single. Time.
+
+This library does that part for you. It wraps [`@huggingface/transformers`](https://huggingface.co/docs/transformers.js) with a sane API and handles the ugly bits: device detection, model caching, token streaming, KV-cache management, and GPU recovery.
 
 ## Install
 
@@ -10,23 +12,23 @@ Wraps [`@huggingface/transformers`](https://huggingface.co/docs/transformers.js)
 npm install webml-utils @huggingface/transformers
 ```
 
-## Quick Start
+## Quick start
 
 ```ts
 import { ModelClient } from 'webml-utils';
 
-// 1. Create a client (point to the worker file)
+// Point to the worker file
 const client = new ModelClient(
   new URL('webml-utils/worker', import.meta.url)
 );
 
-// 2. Check device capabilities
+// What can this machine do?
 const device = await client.detect();
-console.log(device.backend);         // 'webgpu' | 'wasm' | 'cpu'
+console.log(device.backend);         // 'webgpu' or 'wasm' or 'cpu'
 console.log(device.gpu?.vendor);      // 'apple'
 console.log(device.recommendedDtype); // 'q4'
 
-// 3. Load a text generation model
+// Load a model
 await client.load({
   task: 'text-generation',
   modelId: 'onnx-community/Bonsai-1.7B-ONNX',
@@ -34,19 +36,17 @@ await client.load({
   onProgress: ({ percent }) => console.log(`Loading: ${percent}%`),
 });
 
-// 4. Stream tokens
+// Stream tokens as they're generated
 for await (const { token, tps } of client.stream('Tell me a joke')) {
   process.stdout.write(token);
 }
-// → "Why did the developer go broke? Because he used up all his cache."
-// → 42 tokens/sec
 ```
 
-## Features
+## What's in here
 
-### 🔍 Device Detection
+### Device detection
 
-Auto-detect the best compute backend and recommended quantization:
+Figures out what your user's machine can handle and picks a reasonable quantization level:
 
 ```ts
 import { detectDevice, canRun } from 'webml-utils';
@@ -54,32 +54,29 @@ import { detectDevice, canRun } from 'webml-utils';
 const info = await detectDevice();
 // { backend: 'webgpu', gpu: { vendor: 'apple', vram: 8589934592 }, recommendedDtype: 'fp16' }
 
-const { ok, reason } = await canRun(4_000_000_000); // 4GB model
-// { ok: true, backend: 'webgpu' }
+const { ok, reason } = await canRun(4_000_000_000); // Can we fit a 4GB model?
 ```
 
-### 📦 Cache Visibility
+### Cache visibility
 
-Know if a model is already downloaded before showing "downloading…" UI:
+The worst UX in browser ML is showing "downloading 2GB..." to someone who already has the model. Now you can check:
 
 ```ts
 import { isCached, listCachedModels, getCacheSize, clearCache } from 'webml-utils';
 
 if (await isCached('onnx-community/Bonsai-1.7B-ONNX')) {
-  console.log('Instant load — no download needed!');
+  // Skip the progress bar entirely
 }
 
 const models = await listCachedModels();
 // [{ modelId: 'onnx-community/Bonsai-1.7B-ONNX', sizeBytes: 412_000_000 }]
 
-console.log(await getCacheSize()); // 412_000_000 bytes
-
-await clearCache('onnx-community/Bonsai-1.7B-ONNX'); // Free storage
+await clearCache('onnx-community/Bonsai-1.7B-ONNX'); // Free storage on mobile
 ```
 
-### 🔄 Token Streaming
+### Token streaming
 
-Proper `AsyncIterable` with TPS and time-to-first-token:
+A proper `AsyncIterable` instead of raw `postMessage` callbacks. Tracks tokens-per-second and time-to-first-token:
 
 ```ts
 for await (const event of client.stream('Hello!')) {
@@ -87,135 +84,119 @@ for await (const event of client.stream('Hello!')) {
   // { token: 'World', tps: 38.5, numTokens: 12, timeToFirstToken: 145 }
 }
 
-// Or collect everything at once:
+// Or grab everything at once:
 const { text, tps, numTokens } = await client.generate('Hello!');
 ```
 
-### 🛡️ GPU Recovery
+### GPU recovery
 
-Auto-recover from GPU device-lost events (TDR, VRAM pressure, driver resets):
+GPUs disappear. It happens — TDR resets, VRAM pressure, mobile browsers reclaiming resources. Without handling this, the user has to reload the page. This recovers automatically with backoff:
 
 ```ts
 import { GPURecovery } from 'webml-utils';
 
 const recovery = new GPURecovery({ maxRetries: 3, baseDelayMs: 1000 });
 recovery.on('lost', ({ reason }) => showBanner('GPU lost: ' + reason));
-recovery.on('recovered', ({ adapter }) => console.log('GPU back online'));
+recovery.on('recovered', ({ adapter }) => console.log('Back online'));
 recovery.on('failed', () => showFallbackMessage());
 ```
 
-### 🎯 All Pipeline Tasks
+### All pipeline tasks
 
-Every `@huggingface/transformers` task is supported:
+Not just text generation. Every task `@huggingface/transformers` supports works through the same API:
 
 ```ts
-// Image Classification
+// Classify an image
 const labels = await client.run('image-classification', imageUrl);
 // [{ label: 'tabby cat', score: 0.98 }]
 
-// Speech Recognition
+// Transcribe audio
 const { text } = await client.run('automatic-speech-recognition', audioBlob);
-// "Hello, how are you?"
 
-// Embeddings
+// Get embeddings
 const vectors = await client.run('feature-extraction', 'Hello world');
-// Float32Array[384]
 
-// Object Detection
+// Detect objects
 const objects = await client.run('object-detection', imageBlob);
-// [{ label: 'person', score: 0.95, box: { xmin, ymin, xmax, ymax } }]
 
-// Translation
-const translated = await client.run('translation', 'Hello world');
-
-// Summarization
-const summary = await client.run('summarization', longText);
-
-// And more: text-classification, zero-shot-classification,
-// image-to-text, text-to-speech, fill-mask, question-answering,
-// token-classification, depth-estimation, image-segmentation
+// Translate, summarize, caption images, answer questions,
+// classify text, extract entities, estimate depth, segment images
 ```
 
-## API Reference
+## API
 
-### `ModelClient`
+### ModelClient
 
-| Method | Description |
+| Method | What it does |
 |---|---|
-| `detect()` | Detect device capabilities |
-| `load(options)` | Load a model pipeline |
-| `stream(input, options?)` | Stream text generation tokens |
-| `generate(input, options?)` | Generate text (one-shot) |
-| `run(task, input, options?)` | Run any pipeline task |
-| `interrupt()` | Interrupt ongoing generation |
-| `reset()` | Reset KV cache (new conversation) |
-| `dispose(modelKey?)` | Free model memory |
-| `isLoaded(task, modelId)` | Check if a model is loaded |
-| `terminate()` | Kill the worker |
-| `on(event, listener)` | Listen to events |
+| `detect()` | Returns device capabilities and recommended dtype |
+| `load(options)` | Downloads and initializes a model pipeline |
+| `stream(input, options?)` | Returns an async iterator of tokens |
+| `generate(input, options?)` | Generates text, waits for completion |
+| `run(task, input, options?)` | Runs any pipeline task |
+| `interrupt()` | Stops an in-progress generation |
+| `reset()` | Clears the KV cache (new conversation) |
+| `dispose(modelKey?)` | Frees model memory |
+| `isLoaded(task, modelId)` | Checks if a specific model is ready |
+| `terminate()` | Kills the worker entirely |
+| `on(event, listener)` | Listens for progress, ready, error, device-lost, device-recovered |
 
-### Events
+### Standalone functions
 
-| Event | Data |
+These work without a ModelClient — useful for pre-flight checks:
+
+| Function | What it does |
 |---|---|
-| `progress` | `{ status, loaded, total, percent }` |
-| `ready` | `{ modelKey }` |
-| `error` | `{ message, id? }` |
-| `device-lost` | `{ reason }` |
-| `device-recovered` | `void` |
+| `detectDevice()` | Backend detection + GPU info + dtype recommendation |
+| `checkWebGPU()` | Boolean: is WebGPU available? |
+| `canRun(bytes)` | Can a model of this size fit in VRAM? |
+| `isCached(modelId)` | Is this model already downloaded? |
+| `listCachedModels()` | What's in the cache? |
+| `clearCache(modelId?)` | Delete cached model files |
+| `getCacheSize()` | Total bytes used by cached models |
 
-### Standalone Utilities
+## Supported tasks
 
-| Function | Module |
-|---|---|
-| `detectDevice()` | `webml-utils` |
-| `checkWebGPU()` | `webml-utils` |
-| `canRun(bytes)` | `webml-utils` |
-| `isCached(modelId)` | `webml-utils` |
-| `listCachedModels()` | `webml-utils` |
-| `clearCache(modelId?)` | `webml-utils` |
-| `getCacheSize()` | `webml-utils` |
-
-## Supported Tasks
-
-| Task | Streaming | Default Model |
+| Task | Streaming | Default model |
 |---|---|---|
-| `text-generation` | ✅ | `onnx-community/Llama-3.2-1B-Instruct-ONNX` |
-| `text-classification` | — | `Xenova/distilbert-base-uncased-finetuned-sst-2-english` |
-| `image-classification` | — | `Xenova/vit-base-patch16-224` |
-| `object-detection` | — | `Xenova/detr-resnet-50` |
-| `automatic-speech-recognition` | — | `onnx-community/whisper-tiny.en` |
-| `text-to-speech` | — | `Xenova/speecht5_tts` |
-| `translation` | — | `Xenova/nllb-200-distilled-600M` |
-| `summarization` | — | `Xenova/distilbart-cnn-6-6` |
-| `feature-extraction` | — | `Xenova/all-MiniLM-L6-v2` |
-| `image-to-text` | — | `Xenova/vit-gpt2-image-captioning` |
-| `zero-shot-classification` | — | `Xenova/mobilebert-uncased-mnli` |
-| `fill-mask` | — | `Xenova/bert-base-uncased` |
-| `question-answering` | — | `Xenova/distilbert-base-uncased-distilled-squad` |
-| `token-classification` | — | `Xenova/bert-base-NER` |
-| `depth-estimation` | — | `Xenova/depth-anything-small-hf` |
-| `image-segmentation` | — | `Xenova/detr-resnet-50-panoptic` |
+| `text-generation` | yes | `onnx-community/Llama-3.2-1B-Instruct-ONNX` |
+| `text-classification` | no | `Xenova/distilbert-base-uncased-finetuned-sst-2-english` |
+| `image-classification` | no | `Xenova/vit-base-patch16-224` |
+| `object-detection` | no | `Xenova/detr-resnet-50` |
+| `automatic-speech-recognition` | no | `onnx-community/whisper-tiny.en` |
+| `text-to-speech` | no | `Xenova/speecht5_tts` |
+| `translation` | no | `Xenova/nllb-200-distilled-600M` |
+| `summarization` | no | `Xenova/distilbart-cnn-6-6` |
+| `feature-extraction` | no | `Xenova/all-MiniLM-L6-v2` |
+| `image-to-text` | no | `Xenova/vit-gpt2-image-captioning` |
+| `zero-shot-classification` | no | `Xenova/mobilebert-uncased-mnli` |
+| `fill-mask` | no | `Xenova/bert-base-uncased` |
+| `question-answering` | no | `Xenova/distilbert-base-uncased-distilled-squad` |
+| `token-classification` | no | `Xenova/bert-base-NER` |
+| `depth-estimation` | no | `Xenova/depth-anything-small-hf` |
+| `image-segmentation` | no | `Xenova/detr-resnet-50-panoptic` |
 
-## How It Works
+## How it works
 
 ```
-┌─────────────┐     postMessage      ┌──────────────────┐
-│  Your App   │ ◄──────────────────► │   model-worker   │
-│  (main)     │   WorkerCommand/     │   (Web Worker)   │
-│             │   WorkerResponse     │                  │
-│  ModelClient│                      │  @hf/transformers │
-│  TokenStream│                      │  WebGPU / WASM    │
-│  GPURecovery│                      │  Pipeline Cache   │
-└─────────────┘                      └──────────────────┘
+Your App (main thread)          Web Worker
+--------------------------      ---------------------------
+ModelClient                     model-worker.ts
+  .load()    --- postMessage -->  pipeline() from @hf/transformers
+  .stream()  <-- tokens --------  TextStreamer + KV cache
+  .run()     <-- result --------  One-shot inference
+  .interrupt() -- signal ------>  InterruptableStoppingCriteria
+
+TokenStream (AsyncIterable)     Singleton pipeline cache
+GPURecovery (auto-reconnect)    WebGPU device management
 ```
 
 ## Requirements
 
-- **Browser**: Chrome 113+, Edge 113+, Safari 18+ (WASM fallback)
-- **Node.js**: 18+ (WASM only, no WebGPU)
-- **Peer dep**: `@huggingface/transformers` >= 4.0.0
+- Chrome 113+, Edge 113+, or Safari 18+ (falls back to WASM on older browsers)
+- Node.js 18+ (WASM only, no WebGPU)
+- `@huggingface/transformers` >= 4.0.0 as a peer dependency
 
 ## License
 
-MIT © [Hemanth HM](https://h3manth.com)
+MIT — [Hemanth HM](https://h3manth.com)
