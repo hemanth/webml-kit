@@ -54,7 +54,7 @@ import { detectDevice, canRun } from 'webml-utils';
 const info = await detectDevice();
 // { backend: 'webgpu', gpu: { vendor: 'apple', vram: 8589934592 }, recommendedDtype: 'fp16' }
 
-const { ok, reason } = await canRun(4_000_000_000); // Can we fit a 4GB model?
+const { ok, reason } = await canRun('4GB'); // Can we fit a 4GB model?
 ```
 
 ### Cache visibility
@@ -69,7 +69,7 @@ if (await isCached('onnx-community/Bonsai-1.7B-ONNX')) {
 }
 
 const models = await listCachedModels();
-// [{ modelId: 'onnx-community/Bonsai-1.7B-ONNX', sizeBytes: 412_000_000 }]
+// [{ modelId: 'onnx-community/Bonsai-1.7B-ONNX', size: '412.0 MB', sizeBytes: 432013312 }]
 
 await clearCache('onnx-community/Bonsai-1.7B-ONNX'); // Free storage on mobile
 ```
@@ -154,6 +154,8 @@ These work without a ModelClient — useful for pre-flight checks:
 | `listCachedModels()` | What's in the cache? |
 | `clearCache(modelId?)` | Delete cached model files |
 | `getCacheSize()` | Total bytes used by cached models |
+| `parseSize(input)` | Convert '4GB' / '512MB' to bytes |
+| `formatSize(bytes)` | Convert bytes to '4.0 GB' / '512.0 MB' |
 
 ## Supported tasks
 

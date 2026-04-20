@@ -7,6 +7,7 @@
  */
 
 import type { CachedModel, CacheBackend } from './types.js';
+import { formatSize } from './device.js';
 
 /** HuggingFace Transformers.js cache name prefix */
 const HF_CACHE_PREFIX = 'transformers-cache';
@@ -118,6 +119,7 @@ export async function listCachedModels(): Promise<CachedModel[]> {
         models.push({
           modelId,
           sizeBytes,
+          size: formatSize(sizeBytes),
           lastAccessed: new Date(), // Cache API doesn't track this
         });
       }

@@ -52,6 +52,8 @@ export {
   getGPUInfo,
   recommendDtype,
   canRun,
+  parseSize,
+  formatSize,
 } from './device.js';
 
 // ─── Cache ───

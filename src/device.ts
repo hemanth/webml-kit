@@ -117,35 +117,97 @@ export async function detectDevice(): Promise<DeviceInfo> {
   };
 }
 
+// ─── Size parsing / formatting ───
+
+const SIZE_UNITS: Record<string, number> = {
+  b: 1,
+  kb: 1024,
+  mb: 1024 ** 2,
+  gb: 1024 ** 3,
+  tb: 1024 ** 4,
+};
+
 /**
- * Check whether a model of a given size (bytes) can likely run
+ * Parse a human-readable size string into bytes.
+ *
+ * Accepts formats like '4GB', '512 MB', '1.5gb', '256mb'.
+ * Also accepts raw numbers (passed through as-is).
+ *
+ * ```ts
+ * parseSize('4GB')    // 4294967296
+ * parseSize('512MB')  // 536870912
+ * parseSize('1.5gb')  // 1610612736
+ * parseSize(1024)     // 1024
+ * ```
+ */
+export function parseSize(input: string | number): number {
+  if (typeof input === 'number') return input;
+
+  const match = input.trim().match(/^([\d.]+)\s*(b|kb|mb|gb|tb)$/i);
+  if (!match) {
+    throw new Error(
+      `Invalid size format: "${input}". Use something like "4GB", "512MB", or a number in bytes.`
+    );
+  }
+
+  const value = parseFloat(match[1]);
+  const unit = match[2].toLowerCase();
+  return Math.round(value * SIZE_UNITS[unit]);
+}
+
+/**
+ * Format bytes into a human-readable string.
+ *
+ * ```ts
+ * formatSize(4294967296)  // '4 GB'
+ * formatSize(536870912)   // '512 MB'
+ * formatSize(1536)        // '1.5 KB'
+ * ```
+ */
+export function formatSize(bytes: number): string {
+  if (bytes >= 1024 ** 4) return `${(bytes / 1024 ** 4).toFixed(1)} TB`;
+  if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(1)} GB`;
+  if (bytes >= 1024 ** 2) return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
+  if (bytes >= 1024)      return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${bytes} B`;
+}
+
+// ─── canRun ───
+
+/**
+ * Check whether a model of a given size can likely run
  * on the current device without OOM.
+ *
+ * Accepts human-readable strings or raw byte counts:
+ *
+ * ```ts
+ * await canRun('4GB');
+ * await canRun('512MB');
+ * await canRun(4_000_000_000);
+ * ```
  *
  * This is a heuristic — real limits depend on browser, OS, and
  * other tabs consuming VRAM.
  */
-export async function canRun(estimatedModelBytes: number): Promise<{
+export async function canRun(estimatedSize: string | number): Promise<{
   ok: boolean;
   backend: DeviceBackend;
   reason?: string;
 }> {
+  const bytes = parseSize(estimatedSize);
   const device = await detectDevice();
 
   if (device.backend === 'webgpu' && device.gpu) {
     // Leave ~500MB headroom for browser internals
     const available = device.gpu.vram - 512 * 1024 ** 2;
-    if (estimatedModelBytes > available) {
+    if (bytes > available) {
       return {
         ok: false,
         backend: device.backend,
-        reason: `Model (~${mb(estimatedModelBytes)}) exceeds available VRAM (~${mb(available)})`,
+        reason: `Model (~${formatSize(bytes)}) exceeds available VRAM (~${formatSize(available)})`,
       };
     }
   }
 
   return { ok: true, backend: device.backend };
-}
-
-function mb(bytes: number): string {
-  return `${Math.round(bytes / 1024 ** 2)} MB`;
 }

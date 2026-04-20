@@ -170,7 +170,10 @@ export type CacheBackend = 'cache-api' | 'opfs' | 'indexeddb';
 
 export interface CachedModel {
   modelId: string;
+  /** Raw byte count */
   sizeBytes: number;
+  /** Human-readable size (e.g. '412.0 MB') */
+  size: string;
   lastAccessed: Date;
 }
 
