@@ -21,6 +21,10 @@
     .transcript { width: 100%; max-width: 500px; min-height: 120px; background: #111118; border: 1px solid #222; border-radius: 8px; padding: 16px; font-size: 0.95rem; line-height: 1.6; white-space: pre-wrap; }
     .transcript:empty::before { content: 'transcription will appear here...'; color: #444; }
     input[type="file"] { display: none; }
+    .progress-wrap { width: 100%; max-width: 500px; margin-bottom: 16px; }
+    .progress-bar { width: 100%; height: 6px; background: #222; border-radius: 3px; overflow: hidden; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, #7c3aed, #a78bfa); width: 0%; transition: width 0.3s; }
+    .progress-text { font-size: 0.72rem; color: #666; font-family: monospace; margin-top: 4px; text-align: center; min-height: 16px; }
     .or { color: #444; font-size: 0.8rem; margin-bottom: 12px; }
   </style>
 </head>
@@ -28,6 +32,10 @@
   <h1>speech recognition</h1>
   <p class="subtitle">record from mic or drop an audio file — transcribed locally via Whisper</p>
   <div id="status">loading model...</div>
+  <div class="progress-wrap">
+    <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+    <div class="progress-text" id="progressText"></div>
+  </div>
 
   <div class="controls">
     <button id="recordBtn" disabled>hold to record</button>
@@ -49,6 +57,15 @@
     const dropZone = $('dropZone');
     const fileInput = $('fileInput');
     const transcript = $('transcript');
+    const progress = $('progress');
+    const progressText = $('progressText');
+
+    function fmtSize(bytes) {
+      if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(1)} GB`;
+      if (bytes >= 1024 ** 2) return `${(bytes / 1024 ** 2).toFixed(0)} MB`;
+      if (bytes >= 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+      return `${bytes} B`;
+    }
 
     const worker = new Worker('./worker.js', { type: 'module' });
     let ready = false;
@@ -72,9 +89,13 @@
           });
           break;
 
-        case 'progress':
-          status.textContent = `${msg.data.status}: ${msg.data.percent}%`;
+        case 'progress': {
+          const { status: st, percent, loaded, total } = msg.data;
+          status.textContent = st === 'compiling' ? 'compiling shaders...' : `downloading: ${percent}%`;
+          progress.style.width = `${percent}%`;
+          progressText.textContent = (total > 0 && st !== 'compiling') ? `${fmtSize(loaded)} / ${fmtSize(total)}` : '';
           break;
+        }
 
         case 'ready':
           status.textContent = 'ready — record or drop audio';
