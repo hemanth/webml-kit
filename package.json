@@ -22,6 +22,8 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "clean": "rm -rf dist",
     "prepublishOnly": "npm run clean && npm run build"
   },
@@ -48,6 +50,7 @@
   "devDependencies": {
     "@huggingface/transformers": "^4.1.0",
     "@webgpu/types": "^0.1.69",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vitest": "^4.1.4"
   }
 }
