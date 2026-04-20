@@ -9,7 +9,7 @@ This library does that part for you. It wraps [`@huggingface/transformers`](http
 ## Install
 
 ```bash
-npm install webml-kit @huggingface/transformers
+npm install webml-kit
 ```
 
 ## Quick start

@@ -1,6 +1,6 @@
 {
   "name": "webml-kit",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Framework-agnostic utilities for loading and running ML models in the browser via WebGPU/WASM",
   "type": "module",
   "main": "./dist/index.js",
@@ -44,11 +44,10 @@
     "type": "git",
     "url": "https://github.com/hemanth/webml-kit.git"
   },
-  "peerDependencies": {
-    "@huggingface/transformers": ">=4.0.0"
+  "dependencies": {
+    "@huggingface/transformers": "^4.1.0"
   },
   "devDependencies": {
-    "@huggingface/transformers": "^4.1.0",
     "@webgpu/types": "^0.1.69",
     "typescript": "^5.7.0",
     "vitest": "^4.1.4"
