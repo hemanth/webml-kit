@@ -5,7 +5,7 @@
  * import webml from 'webml-kit';
  *
  * // Speech recognition
- * const asr = await webml('gnumanth/sushrota-sanskrit-asr-onnx');
+ * const asr = await webml('onnx-community/whisper-tiny.en');
  * const { text } = await asr.transcribe(audioBlob);
  *
  * // Live mic listening
@@ -155,7 +155,7 @@ export async function inferTask(modelId: string): Promise<PipelineTask> {
 /**
  * Load any ML model for in-browser execution with zero ceremony.
  *
- * @param modelId - Hugging Face model ID (e.g. 'gnumanth/sushrota-sanskrit-asr-onnx') or URL
+ * @param modelId - Hugging Face model ID (e.g. 'onnx-community/whisper-tiny.en') or URL
  * @param options - Configuration options
  * @returns Ready-to-use callable model instance
  */

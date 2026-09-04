@@ -24,7 +24,7 @@ npm install webml-kit
 import webml from 'webml-kit';
 
 // Speech recognition — auto-detects task, normalizes audio (Blob, File, URL, Float32Array)
-const asr = await webml('gnumanth/sushrota-sanskrit-asr-onnx');
+const asr = await webml('onnx-community/whisper-tiny.en');
 const { text } = await asr.transcribe(audioBlob);
 
 // Live microphone listening
@@ -176,16 +176,12 @@ const objects = await client.run('object-detection', imageBlob);
 
 ### Standalone & Custom ONNX Models
 
-Not every model uses standard `@huggingface/transformers` pipelines. `webml-kit` automatically detects and supports standalone ONNX models, companion audio preprocessors, and CTC decoders (e.g., NeMo Conformer-CTC models like `gnumanth/sushrota-sanskrit-asr-onnx`), with automatic WebGPU-to-WASM fallback when custom operators require WASM SIMD:
+Not every model uses standard `@huggingface/transformers` pipelines. `webml-kit` automatically detects and supports standalone ONNX models, companion audio preprocessors, and custom CTC decoders (such as NeMo Conformer-CTC models, standalone vision backbones, or raw ONNX graphs), with automatic WebGPU-to-WASM fallback when operators require WASM SIMD:
 
 ```ts
-// Load standalone ONNX models from HF Hub or direct URL
-await client.load({
-  task: 'automatic-speech-recognition',
-  modelId: 'gnumanth/sushrota-sanskrit-asr-onnx',
-});
-
-const { text } = await client.run('automatic-speech-recognition', audioFloat32Array);
+// Load standalone ONNX models from HF Hub, local files, or URLs
+const asr = await webml('onnx-community/whisper-tiny.en'); // or any standalone ONNX model
+const { text } = await asr.transcribe(audioFloat32Array);
 ```
 
 ## API
