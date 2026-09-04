@@ -39,6 +39,16 @@
  * @packageDocumentation
  */
 
+// ─── Functional API (Default Export) ───
+export { webml, inferTask } from './loader.js';
+export type { WebMLOptions, LoadedModel } from './loader.js';
+import webml from './loader.js';
+export default webml;
+
+// ─── Input & Media Helpers ───
+export { coerceAudio, listenMic } from './inputs.js';
+export type { ListenOptions, MicListener } from './inputs.js';
+
 // ─── Core ───
 export { ModelClient } from './model-client.js';
 export type { LoadOptions, ClientEventType } from './model-client.js';

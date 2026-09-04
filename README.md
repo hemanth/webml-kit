@@ -18,12 +18,39 @@ npm install webml-kit
 
 ## Quick start
 
+### Zero-ceremony functional API
+
+```ts
+import webml from 'webml-kit';
+
+// Speech recognition — auto-detects task, normalizes audio (Blob, File, URL, Float32Array)
+const asr = await webml('gnumanth/sushrota-sanskrit-asr-onnx');
+const { text } = await asr.transcribe(audioBlob);
+
+// Live microphone listening
+const mic = await asr.listen({
+  onTranscript: (text) => console.log(text),
+});
+
+// Text generation with streaming
+const llm = await webml('onnx-community/Llama-3.2-1B-Instruct-ONNX');
+for await (const { token } of llm.stream('Tell me a joke')) {
+  process.stdout.write(token);
+}
+
+// Image classification (callable object)
+const classifier = await webml('Xenova/vit-base-patch16-224');
+const labels = await classifier(imageFile);
+```
+
+### Low-level ModelClient
+
+For manual control over device detection, cache, and worker threads:
+
 ```ts
 import { ModelClient } from 'webml-kit';
 
 const client = new ModelClient();
-// or with an explicit worker path:
-// const client = new ModelClient(new URL('webml-kit/worker', import.meta.url));
 
 // What can this machine do?
 const device = await client.detect();
