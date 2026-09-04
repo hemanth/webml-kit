@@ -49,7 +49,9 @@ export type PipelineTask =
   | 'question-answering'
   | 'token-classification'
   | 'depth-estimation'
-  | 'image-segmentation';
+  | 'image-segmentation'
+  | 'raw-onnx'
+  | 'custom';
 
 // ─── Model Configuration ───
 
@@ -62,6 +64,16 @@ export interface ModelConfig {
   device?: DeviceBackend;
   /** Revision / branch on HuggingFace Hub */
   revision?: string;
+  /** Pipeline runner type: 'transformers' (HF pipeline), 'onnx' (raw/custom ONNX), or 'auto' (smart fallback) */
+  modelType?: 'transformers' | 'onnx' | 'auto';
+  /** Custom model filename or URL (e.g. 'sushrota_sanskrit_ctc_int8.onnx' or './model.onnx') */
+  modelFile?: string;
+  /** Companion audio preprocessor model filename or URL (e.g. 'preprocessor.onnx') */
+  preprocessorFile?: string;
+  /** Vocabulary mapping JSON filename or URL (e.g. 'sanskrit_vocab.json') */
+  vocabFile?: string;
+  /** Custom execution providers override, e.g. ['wasm'] or ['webgpu', 'wasm'] */
+  executionProviders?: string[];
 }
 
 // ─── Progress ───

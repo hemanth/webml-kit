@@ -80,6 +80,15 @@ export {
 } from './pipelines/index.js';
 export type { PipelineDefaults } from './pipelines/index.js';
 
+// ─── ONNX Pipelines ───
+export {
+  createOnnxPipeline,
+  decodeCTC,
+  decodeWavToFloat32,
+  toFloat32Array,
+} from './onnx-pipeline.js';
+export type { OnnxPipelineInstance } from './onnx-pipeline.js';
+
 // ─── Hub Search ───
 export {
   searchModels,

@@ -147,6 +147,20 @@ const objects = await client.run('object-detection', imageBlob);
 // classify text, extract entities, estimate depth, segment images
 ```
 
+### Standalone & Custom ONNX Models
+
+Not every model uses standard `@huggingface/transformers` pipelines. `webml-kit` automatically detects and supports standalone ONNX models, companion audio preprocessors, and CTC decoders (e.g., NeMo Conformer-CTC models like `gnumanth/sushrota-sanskrit-asr-onnx`), with automatic WebGPU-to-WASM fallback when custom operators require WASM SIMD:
+
+```ts
+// Load standalone ONNX models from HF Hub or direct URL
+await client.load({
+  task: 'automatic-speech-recognition',
+  modelId: 'gnumanth/sushrota-sanskrit-asr-onnx',
+});
+
+const { text } = await client.run('automatic-speech-recognition', audioFloat32Array);
+```
+
 ## API
 
 ### ModelClient

@@ -116,6 +116,18 @@ export const PIPELINE_REGISTRY: Record<PipelineTask, PipelineDefaults> = {
     supportsStreaming: false,
     usesKVCache: false,
   },
+  'raw-onnx': {
+    defaultModel: '',
+    defaultDtype: 'fp32',
+    supportsStreaming: false,
+    usesKVCache: false,
+  },
+  'custom': {
+    defaultModel: '',
+    defaultDtype: 'fp32',
+    supportsStreaming: false,
+    usesKVCache: false,
+  },
 };
 
 /**

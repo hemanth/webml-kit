@@ -98,11 +98,29 @@ async function loadPipeline(config) {
   }
 
   try {
-    const pipelineInstance = await pipeline(config.task, config.modelId, {
-      dtype: config.dtype ?? 'q4',
-      device: config.device ?? 'webgpu',
-      progress_callback: onProgress,
-    });
+    const isExplicitOnnx = config.modelType === 'onnx' || config.modelId.endsWith('.onnx') || config.task === 'raw-onnx';
+    if (isExplicitOnnx) {
+      const onnxInstance = await loadStandaloneOnnx(config);
+      pipelines.set(key, onnxInstance);
+      self.postMessage({ type: 'ready', modelKey: key });
+      return;
+    }
+
+    let pipelineInstance;
+    try {
+      pipelineInstance = await pipeline(config.task, config.modelId, {
+        dtype: config.dtype ?? 'q4',
+        device: config.device ?? 'webgpu',
+        progress_callback: onProgress,
+      });
+    } catch (hfErr) {
+      const errMsg = hfErr.message || String(hfErr);
+      if (errMsg.includes('config.json') || errMsg.includes('Could not locate file') || errMsg.includes('Unsupported model')) {
+        pipelineInstance = await loadStandaloneOnnx(config);
+      } else {
+        throw hfErr;
+      }
+    }
 
     pipelines.set(key, pipelineInstance);
 
@@ -125,6 +143,131 @@ async function loadPipeline(config) {
       data: err.message || String(err),
     });
   }
+}
+
+async function loadStandaloneOnnx(config) {
+  const ort = await import('https://cdn.jsdelivr.net/npm/onnxruntime-web@1.21.0/dist/esm/ort.min.js');
+  ort.env.wasm.simd = true;
+
+  let modelUrl = config.modelId;
+  let prepUrl = null;
+  let vocab = {};
+
+  if (!config.modelId.endsWith('.onnx') && !config.modelId.startsWith('http')) {
+    // Query Hugging Face Hub
+    try {
+      const res = await fetch(`https://huggingface.co/api/models/${config.modelId}`);
+      if (res.ok) {
+        const data = await res.json();
+        const files = (data.siblings || []).map(s => s.rfilename);
+        const modelFile = files.find(f => f.endsWith('.onnx') && !f.includes('preprocess')) || files.find(f => f.endsWith('.onnx'));
+        const prepFile = files.find(f => f.endsWith('.onnx') && f.includes('preprocess'));
+        const vocabFile = files.find(f => f.endsWith('.json') && (f.includes('vocab') || f.includes('tokens')));
+
+        if (modelFile) modelUrl = `https://huggingface.co/${config.modelId}/resolve/main/${modelFile}`;
+        if (prepFile) prepUrl = `https://huggingface.co/${config.modelId}/resolve/main/${prepFile}`;
+        if (vocabFile) {
+          const vRes = await fetch(`https://huggingface.co/${config.modelId}/resolve/main/${vocabFile}`);
+          if (vRes.ok) vocab = await vRes.json();
+        }
+      }
+    } catch {}
+  }
+
+  // Create session with WebGPU -> WASM fallback
+  let backend = config.device === 'wasm' ? 'wasm' : 'webgpu';
+  let modelSession = null;
+  let prepSession = null;
+
+  try {
+    modelSession = await ort.InferenceSession.create(modelUrl, { executionProviders: [backend] });
+  } catch {
+    backend = 'wasm';
+    modelSession = await ort.InferenceSession.create(modelUrl, { executionProviders: ['wasm'] });
+  }
+
+  if (prepUrl) {
+    try {
+      prepSession = await ort.InferenceSession.create(prepUrl, { executionProviders: [backend] });
+    } catch {
+      prepSession = await ort.InferenceSession.create(prepUrl, { executionProviders: ['wasm'] });
+    }
+  }
+
+  if (config.task === 'automatic-speech-recognition') {
+    return async function runASR(input) {
+      let pcm = input instanceof Float32Array ? input : new Float32Array(input.buffer || input);
+
+      const runInference = async (sess) => {
+        let signal, len;
+        if (prepSession) {
+          const audioTensor = new ort.Tensor('float32', pcm, [1, pcm.length]);
+          const lengthTensor = new ort.Tensor('int64', BigInt64Array.from([BigInt(pcm.length)]), [1]);
+          const prepOut = await prepSession.run({ audio_signal: audioTensor, length: lengthTensor });
+          signal = prepOut.processed_signal || Object.values(prepOut)[0];
+          len = prepOut.processed_length || Object.values(prepOut)[1];
+        } else {
+          signal = new ort.Tensor('float32', pcm, [1, pcm.length]);
+          len = new ort.Tensor('int64', BigInt64Array.from([BigInt(pcm.length)]), [1]);
+        }
+
+        const feeds = {};
+        if (sess.inputNames.length >= 2) {
+          feeds[sess.inputNames[0]] = signal;
+          feeds[sess.inputNames[1]] = len;
+        } else {
+          feeds[sess.inputNames[0]] = signal;
+        }
+
+        const outputs = await sess.run(feeds);
+        const logprobs = outputs.logprobs || Object.values(outputs)[0];
+        const dims = logprobs.dims;
+        const timeSteps = dims.length === 3 ? dims[1] : dims[0];
+        const numClasses = dims[dims.length - 1];
+        const data = logprobs.data;
+
+        // Greedy CTC
+        let prev = 0;
+        let text = '';
+        for (let t = 0; t < timeSteps; t++) {
+          const off = t * numClasses;
+          let maxVal = -Infinity;
+          let argmax = 0;
+          for (let c = 0; c < numClasses; c++) {
+            if (data[off + c] > maxVal) {
+              maxVal = data[off + c];
+              argmax = c;
+            }
+          }
+          if (argmax === 0) { prev = 0; continue; }
+          if (argmax !== prev) {
+            text += vocab[argmax] || '';
+            prev = argmax;
+          }
+        }
+        return { text: text.replace(/\u2581/g, ' ').replace(/\s+/g, ' ').trim() };
+      };
+
+      try {
+        return await runInference(modelSession);
+      } catch (err) {
+        if (backend === 'webgpu') {
+          backend = 'wasm';
+          modelSession = await ort.InferenceSession.create(modelUrl, { executionProviders: ['wasm'] });
+          return await runInference(modelSession);
+        }
+        throw err;
+      }
+    };
+  }
+
+  // Generic ONNX runner
+  return async function runGeneric(input) {
+    const outputs = await modelSession.run(input);
+    const res = {};
+    for (const [k, v] of Object.entries(outputs)) res[k] = v.data;
+    return res;
+  };
 }
 
 // ─── Run inference ───

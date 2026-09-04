@@ -20,6 +20,8 @@ import {
   InterruptableStoppingCriteria,
 } from '@huggingface/transformers';
 
+import { createOnnxPipeline, type OnnxPipelineInstance } from './onnx-pipeline.js';
+
 import type {
   WorkerCommand,
   WorkerResponse,
@@ -27,12 +29,13 @@ import type {
   PipelineTask,
   DeviceInfo,
   ProgressEvent,
+  ProgressCallback,
   TokenEvent,
 } from './types.js';
 
 // ─── State ───
 
-type PipelineInstance = Awaited<ReturnType<typeof hfPipeline>>;
+type PipelineInstance = Awaited<ReturnType<typeof hfPipeline>> | OnnxPipelineInstance;
 
 const instances = new Map<string, Promise<PipelineInstance>>();
 const kvCaches = new Map<string, InstanceType<typeof DynamicCache>>();
@@ -108,28 +111,66 @@ async function loadPipeline(config: ModelConfig): Promise<void> {
 
   // Create singleton pipeline
   if (!instances.has(key)) {
-    const pipelinePromise = hfPipeline(config.task, config.modelId, {
-      device: config.device ?? 'webgpu',
-      dtype: config.dtype ?? 'q4',
-      revision: config.revision,
-      progress_callback: (info: Record<string, unknown>) => {
-        if (info.status === 'progress' || info.status === 'progress_total') {
-          const loaded = Number(info.loaded ?? 0);
-          const total = Number(info.total ?? 1);
-          send({
-            type: 'progress',
-            data: {
-              status: 'downloading',
-              file: String(info.file ?? ''),
-              loaded,
-              total,
-              percent: total > 0 ? Math.round((loaded / total) * 100) : 0,
-            },
-          });
+    const isExplicitOnnx =
+      config.modelType === 'onnx' ||
+      config.modelId.endsWith('.onnx') ||
+      config.task === 'raw-onnx' ||
+      config.task === 'custom';
+
+    const onProgress = (info: ProgressEvent | Record<string, unknown>) => {
+      const loaded = Number((info as Record<string, unknown>).loaded ?? 0);
+      const total = Number((info as Record<string, unknown>).total ?? 1);
+      const percent = (info as Record<string, unknown>).percent != null
+        ? Number((info as Record<string, unknown>).percent)
+        : (total > 0 ? Math.round((loaded / total) * 100) : 0);
+      send({
+        type: 'progress',
+        data: {
+          status: ((info as Record<string, unknown>).status as ProgressEvent['status']) ?? 'downloading',
+          file: String((info as Record<string, unknown>).file ?? ''),
+          loaded,
+          total,
+          percent,
+        },
+      });
+    };
+
+    const loadFn = async (): Promise<PipelineInstance> => {
+      if (isExplicitOnnx) {
+        return createOnnxPipeline(config, onProgress as ProgressCallback);
+      }
+
+      if (config.modelType === 'transformers') {
+        return (await hfPipeline(config.task as any, config.modelId, {
+          device: config.device ?? 'webgpu',
+          dtype: config.dtype ?? 'q4',
+          revision: config.revision,
+          progress_callback: onProgress,
+        })) as PipelineInstance;
+      }
+
+      // 'auto' mode: try Hugging Face pipeline first, fallback to ONNX if config is missing
+      try {
+        return (await hfPipeline(config.task as any, config.modelId, {
+          device: config.device ?? 'webgpu',
+          dtype: config.dtype ?? 'q4',
+          revision: config.revision,
+          progress_callback: onProgress,
+        })) as PipelineInstance;
+      } catch (hfErr) {
+        const errMsg = hfErr instanceof Error ? hfErr.message : String(hfErr);
+        if (
+          errMsg.includes('config.json') ||
+          errMsg.includes('Could not locate file') ||
+          errMsg.includes('Unsupported model type')
+        ) {
+          return createOnnxPipeline(config, onProgress as ProgressCallback);
         }
-      },
-    });
-    instances.set(key, pipelinePromise);
+        throw hfErr;
+      }
+    };
+
+    instances.set(key, loadFn());
   }
 
   try {
@@ -317,12 +358,17 @@ async function runTextGeneration(
 
 function disposeModel(targetKey?: string): void {
   if (targetKey) {
+    const p = instances.get(targetKey);
+    p?.then(inst => (inst as unknown as { dispose?: () => void })?.dispose?.());
     instances.delete(targetKey);
     if (kvCaches.has(targetKey)) {
       kvCaches.get(targetKey)?.dispose?.();
       kvCaches.delete(targetKey);
     }
   } else {
+    for (const p of instances.values()) {
+      p.then(inst => (inst as unknown as { dispose?: () => void })?.dispose?.());
+    }
     instances.clear();
     for (const cache of kvCaches.values()) {
       cache?.dispose?.();
