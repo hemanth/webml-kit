@@ -100,6 +100,16 @@ async function loadPipeline(config) {
       progress_callback: onProgress,
     });
 
+    // Special handling for models like SpeechT5 that require AutoProcessor
+    if (config.task === 'text-to-speech' && config.modelId.includes('speecht5')) {
+      try {
+        const { AutoProcessor } = await import('https://esm.sh/@huggingface/transformers@4.1.0');
+        pipe.processor = await AutoProcessor.from_pretrained(config.modelId);
+      } catch (procErr) {
+        console.warn('Could not load AutoProcessor for SpeechT5:', procErr);
+      }
+    }
+
     pipelines.set(key, pipe);
 
     // Warmup for text generation
@@ -195,9 +205,11 @@ async function runTextGeneration(id, generator, input, options = {}) {
 // Run inference dispatcher
 async function runInference(id, task, input, options = {}) {
   let pipe = null;
+  let matchedKey = '';
   for (const [key, p] of pipelines) {
     if (key.startsWith(task + '::')) {
       pipe = p;
+      matchedKey = key;
       break;
     }
   }
@@ -219,17 +231,28 @@ async function runInference(id, task, input, options = {}) {
       const data = output.tolist ? output.tolist() : Array.from(output.data || []);
       self.postMessage({ type: 'result', id, data });
     } else if (task === 'text-to-speech') {
-      const speakerEmbeddings = options.speaker_embeddings ||
-        'https://huggingface.co/datasets/Xenova/transformers.js-docs/resolve/main/speaker_embeddings.bin';
-      const output = await pipe(input, { speaker_embeddings: speakerEmbeddings, ...options });
-      self.postMessage({
-        type: 'result',
-        id,
-        data: {
-          audio: Array.from(output.audio),
-          sampling_rate: output.sampling_rate,
-        },
-      });
+      let output;
+      if (matchedKey.includes('speecht5')) {
+        const speakerEmbeddings = options.speaker_embeddings ||
+          'https://huggingface.co/datasets/Xenova/transformers.js-docs/resolve/main/speaker_embeddings.bin';
+        output = await pipe(input, { speaker_embeddings: speakerEmbeddings, ...options });
+      } else {
+        output = await pipe(input, options);
+      }
+
+      if (output && output.audio) {
+        self.postMessage({
+          type: 'result',
+          id,
+          data: {
+            audio: Array.from(output.audio),
+            sampling_rate: output.sampling_rate || 16000,
+          },
+        });
+      } else {
+        throw new Error('Text-to-speech model did not return an audio waveform');
+      }
+    }
     } else {
       const result = await pipe(input, options);
       self.postMessage({ type: 'result', id, data: result });

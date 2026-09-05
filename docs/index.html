@@ -632,6 +632,13 @@
 
           <!-- TTS Tab -->
           <div class="tab-pane" id="pane-tts">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+              <span style="font-size:0.75rem; color:var(--text-secondary); text-transform:uppercase;">Model</span>
+              <select id="ttsModelSelect" class="btn-sm" style="background:#000; color:#fff; cursor:pointer;">
+                <option value="Xenova/mms-tts-eng" selected>Meta MMS (mms-tts-eng) — Fast & Reliable</option>
+                <option value="Xenova/speecht5_tts">SpeechT5 (speecht5_tts) — Multi-speaker</option>
+              </select>
+            </div>
             <textarea class="input-field" id="ttsInput" placeholder="Enter text to speak...">WebML kit makes in-browser machine learning fast and accessible.</textarea>
             <button class="btn-primary" id="speakBtn">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
@@ -714,8 +721,8 @@ console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class
 
       tts: `<span class="syn-kw">import</span> webml <span class="syn-kw">from</span> <span class="syn-str">'webml-kit'</span><span class="syn-punc">;</span>
 
-<span class="syn-cmt">// 1. Load Speech Synthesis model</span>
-<span class="syn-kw">const</span> tts <span class="syn-punc">=</span> <span class="syn-kw">await</span> <span class="syn-fn">webml</span><span class="syn-punc">(</span><span class="syn-str">'Xenova/speecht5_tts'</span><span class="syn-punc">);</span>
+<span class="syn-cmt">// 1. Load Speech Synthesis model (e.g. Meta MMS or SpeechT5)</span>
+<span class="syn-kw">const</span> tts <span class="syn-punc">=</span> <span class="syn-kw">await</span> <span class="syn-fn">webml</span><span class="syn-punc">(</span><span class="syn-str">'Xenova/mms-tts-eng'</span><span class="syn-punc">);</span>
 
 <span class="syn-cmt">// 2. Generate waveform audio tensor</span>
 <span class="syn-kw">const</span> <span class="syn-punc">{</span> audio<span class="syn-punc">,</span> sampling_rate <span class="syn-punc">}</span> <span class="syn-punc">=</span> <span class="syn-kw">await</span> <span class="syn-fn">tts</span><span class="syn-punc">(</span><span class="syn-str">'Hello from WebML!'</span><span class="syn-punc">);</span>`,
@@ -752,7 +759,7 @@ console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class
         asr: 'Speech Recognition (Whisper)',
         llm: 'Text Generation (LLM Streaming)',
         vision: 'Vision Transformer (ViT)',
-        tts: 'Speech Synthesis (SpeechT5)',
+        tts: 'Speech Synthesis (TTS)',
         embed: 'Sentence Embeddings (MiniLM)'
       };
       tabHeading.textContent = titles[tab] || tab;
@@ -1135,20 +1142,26 @@ console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class
     });
 
     // ─── Tab 4: TTS ───
+    // ─── Tab 4: TTS ───
     $('speakBtn').addEventListener('click', async () => {
       const text = $('ttsInput').value.trim();
       if (!text) return;
-      statusLabel.textContent = 'Synthesizing voice...';
+      const modelId = $('ttsModelSelect') ? $('ttsModelSelect').value : 'Xenova/mms-tts-eng';
+      statusLabel.textContent = `Loading ${modelId.split('/')[1]}...`;
 
       worker.postMessage({
         type: 'load',
-        config: { task: 'text-to-speech', modelId: 'Xenova/speecht5_tts', dtype: 'fp32' }
+        config: { task: 'text-to-speech', modelId, dtype: 'fp32' }
       });
 
       const id = 'tts-' + Date.now();
       const onResult = (e) => {
         if (e.data.id === id) {
           worker.removeEventListener('message', onResult);
+          if (!e.data.data || !e.data.data.audio) {
+            statusLabel.textContent = 'TTS error: no audio produced';
+            return;
+          }
           const { audio, sampling_rate } = e.data.data;
           const AudioContextClass = window.AudioContext || window.webkitAudioContext;
           const ctx = new AudioContextClass({ sampleRate: sampling_rate });
