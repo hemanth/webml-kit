@@ -9,7 +9,7 @@
   <style>
     :root {
       --bg: #000000;
-      --surface: #0a0a0c;
+      --surface: #09090b;
       --surface-hover: #121216;
       --surface-border: #1f1f24;
       --border-subtle: #16161a;
@@ -37,10 +37,10 @@
 
     .container {
       width: 100%;
-      max-width: 1080px;
+      max-width: 1100px;
       display: flex;
       flex-direction: column;
-      gap: 24px;
+      gap: 22px;
     }
 
     /* Header */
@@ -128,11 +128,7 @@
     .status-dot.active { background: #22c55e; box-shadow: 0 0 8px rgba(34, 197, 94, 0.4); }
     .status-dot.busy { background: #eab308; box-shadow: 0 0 8px rgba(234, 179, 8, 0.4); }
     .status-dot.error { background: #ef4444; }
-    .telemetry-actions {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
+
     .btn-sm {
       background: transparent;
       border: 1px solid var(--surface-border);
@@ -172,7 +168,7 @@
     /* Tabs Navigation */
     .tabs-nav {
       display: flex;
-      gap: 8px;
+      gap: 6px;
       border-bottom: 1px solid var(--surface-border);
       overflow-x: auto;
       padding-bottom: 8px;
@@ -183,9 +179,9 @@
       border-radius: 6px;
       color: var(--text-secondary);
       font-family: var(--font-sans);
-      font-size: 0.85rem;
+      font-size: 0.84rem;
       font-weight: 500;
-      padding: 8px 14px;
+      padding: 8px 12px;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -259,7 +255,7 @@
       color: var(--text-primary);
       font-family: var(--font-sans);
       font-size: 0.88rem;
-      padding: 10px 12px;
+      padding: 9px 12px;
       outline: none;
       transition: border-color 0.15s;
     }
@@ -277,8 +273,8 @@
       color: #000000;
       border: 1px solid #ffffff;
       border-radius: 6px;
-      padding: 9px 16px;
-      font-size: 0.85rem;
+      padding: 8px 16px;
+      font-size: 0.84rem;
       font-weight: 600;
       cursor: pointer;
       display: inline-flex;
@@ -299,8 +295,8 @@
       color: var(--text-primary);
       border: 1px solid var(--surface-border);
       border-radius: 6px;
-      padding: 9px 14px;
-      font-size: 0.85rem;
+      padding: 8px 14px;
+      font-size: 0.84rem;
       font-weight: 500;
       cursor: pointer;
       display: inline-flex;
@@ -350,27 +346,40 @@
 
     /* Syntax Color Highlighting */
     .syn-kw { color: #c084fc; font-weight: 600; }     /* keyword */
-    .syn-fn { color: #60a5fa; }                       /* function/method */
-    .syn-str { color: #4ade80; }                      /* strings */
-    .syn-prop { color: #38bdf8; }                     /* properties/args */
-    .syn-cmt { color: #64748b; font-style: italic; }  /* comments */
-    .syn-num { color: #fbbf24; }                      /* numbers */
-    .syn-punc { color: #94a3b8; }                     /* symbols */
+    .syn-fn { color: #60a5fa; }                       /* function */
+    .syn-str { color: #4ade80; }                      /* string */
+    .syn-prop { color: #38bdf8; }                     /* property */
+    .syn-cmt { color: #64748b; font-style: italic; }  /* comment */
+    .syn-num { color: #fbbf24; }                      /* number */
+    .syn-punc { color: #94a3b8; }                     /* syntax */
 
     /* Tab content panes */
     .tab-pane { display: none; }
     .tab-pane.active { display: flex; flex-direction: column; gap: 14px; }
 
-    /* Speech Tab */
-    .audio-controls {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
+    /* Output and Boxes */
+    .output-box {
+      background: #000000;
+      border: 1px solid var(--surface-border);
+      border-radius: 6px;
+      padding: 12px 14px;
+      min-height: 100px;
+      max-height: 200px;
+      overflow-y: auto;
+      font-size: 0.88rem;
+      line-height: 1.5;
+      color: var(--text-primary);
+      white-space: pre-wrap;
     }
+    .output-box:empty::before {
+      content: 'Output will appear here...';
+      color: var(--text-muted);
+    }
+
     .record-box {
       border: 1px dashed var(--surface-border);
       border-radius: 8px;
-      padding: 24px;
+      padding: 20px;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -391,41 +400,20 @@
       50% { transform: scale(1.4); opacity: 1; }
       100% { transform: scale(0.9); opacity: 0.7; }
     }
-    .output-box {
-      background: #000000;
-      border: 1px solid var(--surface-border);
-      border-radius: 6px;
-      padding: 12px 14px;
-      min-height: 100px;
-      max-height: 180px;
-      overflow-y: auto;
-      font-size: 0.88rem;
-      line-height: 1.5;
-      color: var(--text-primary);
-      white-space: pre-wrap;
-    }
-    .output-box:empty::before {
-      content: 'Output will appear here in real-time...';
-      color: var(--text-muted);
-    }
 
-    /* LLM Chat Tab */
     .chat-history {
       background: #000000;
       border: 1px solid var(--surface-border);
       border-radius: 6px;
       padding: 12px;
       min-height: 180px;
-      max-height: 250px;
+      max-height: 220px;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
       gap: 10px;
     }
-    .chat-msg {
-      font-size: 0.85rem;
-      line-height: 1.5;
-    }
+    .chat-msg { font-size: 0.85rem; line-height: 1.5; }
     .chat-msg.user { color: #60a5fa; }
     .chat-msg.assistant { color: #f1f5f9; }
     .tps-badge {
@@ -435,7 +423,6 @@
       margin-top: 4px;
     }
 
-    /* Vision Tab */
     .image-dropzone {
       border: 1px dashed var(--surface-border);
       border-radius: 8px;
@@ -446,14 +433,8 @@
       flex-direction: column;
       align-items: center;
       gap: 8px;
-      transition: border-color 0.15s;
     }
-    .image-dropzone:hover { border-color: #ffffff; }
-    .sample-images {
-      display: flex;
-      gap: 8px;
-      margin-top: 6px;
-    }
+    .sample-images { display: flex; gap: 8px; margin-top: 6px; }
     .sample-thumb {
       width: 48px;
       height: 48px;
@@ -462,29 +443,35 @@
       object-fit: cover;
       cursor: pointer;
       opacity: 0.7;
-      transition: all 0.15s;
     }
-    .sample-thumb:hover, .sample-thumb.active {
-      opacity: 1;
-      border-color: #ffffff;
-    }
-    .preview-img {
-      max-height: 120px;
-      border-radius: 6px;
-      object-fit: contain;
-      display: none;
-    }
+    .sample-thumb.active { opacity: 1; border-color: #fff; }
+    .preview-img { max-height: 120px; border-radius: 6px; object-fit: contain; display: none; }
     .preview-img.visible { display: block; }
-    .class-bar {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
+    .class-bar { display: flex; flex-direction: column; gap: 4px; font-size: 0.78rem; }
+    .class-bar-fill { height: 6px; background: #ffffff; border-radius: 3px; }
+
+    /* Hub & Table */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
       font-size: 0.78rem;
+      font-family: var(--font-mono);
     }
-    .class-bar-fill {
-      height: 6px;
-      background: #ffffff;
-      border-radius: 3px;
+    .data-table th {
+      text-align: left;
+      padding: 6px 8px;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--surface-border);
+      font-weight: 500;
+    }
+    .data-table td {
+      padding: 8px;
+      border-bottom: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+    }
+    .data-table tr:hover td {
+      color: var(--text-primary);
+      background: var(--surface-hover);
     }
 
     /* Footer */
@@ -536,32 +523,44 @@
       </div>
     </div>
 
-    <!-- Download / Compilation Progress -->
+    <!-- Download Progress -->
     <div class="progress-bar-container" id="progressBarContainer">
       <div class="progress-bar-fill" id="progressBarFill"></div>
     </div>
 
-    <!-- Task Switcher Tabs with Monochrome SVG Icons -->
+    <!-- Task Switcher Tabs -->
     <div class="tabs-nav">
       <button class="tab-btn active" data-tab="asr">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
         <span>Speech (Whisper)</span>
       </button>
       <button class="tab-btn" data-tab="llm">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         <span>Chat (LLM)</span>
       </button>
       <button class="tab-btn" data-tab="vision">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
         <span>Vision (ViT)</span>
       </button>
       <button class="tab-btn" data-tab="tts">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
-        <span>Speech Synthesis (TTS)</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+        <span>Speech (TTS)</span>
       </button>
       <button class="tab-btn" data-tab="embed">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="12" r="3"/><line x1="8.59" y1="7.49" x2="15.42" y2="10.51"/><line x1="8.59" y1="16.51" x2="15.42" y2="13.49"/></svg>
-        <span>Embeddings (MiniLM)</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="12" r="3"/><line x1="8.59" y1="7.49" x2="15.42" y2="10.51"/><line x1="8.59" y1="16.51" x2="15.42" y2="13.49"/></svg>
+        <span>Embeddings</span>
+      </button>
+      <button class="tab-btn" data-tab="vram">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9"/><path d="M9 1v3"/><path d="M15 1v3"/><path d="M9 20v3"/><path d="M15 20v3"/><path d="M20 9h3"/><path d="M20 14h3"/><path d="M1 9h3"/><path d="M1 14h3"/></svg>
+        <span>canRun() VRAM</span>
+      </button>
+      <button class="tab-btn" data-tab="hub">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/></svg>
+        <span>HF Hub Search</span>
+      </button>
+      <button class="tab-btn" data-tab="cache">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="8" x="2" y="2" rx="2"/><rect width="20" height="8" x="2" y="14" rx="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></svg>
+        <span>Cache Manager</span>
       </button>
     </div>
 
@@ -591,7 +590,7 @@
                   </button>
                 </div>
                 <div style="font-size:0.75rem; color:var(--text-muted);">
-                  Captures via modern AudioWorkletNode. Zero audio lag, no deprecated ScriptProcessor.
+                  AudioWorklet capture resampled to 16kHz mono. Chunks to in-browser Whisper.
                 </div>
               </div>
             </div>
@@ -618,7 +617,7 @@
           <div class="tab-pane" id="pane-vision">
             <div class="image-dropzone" id="imgDropzone">
               <img id="imgPreview" class="preview-img" alt="preview" />
-              <div id="dropPrompt" style="font-size:0.8rem; color:var(--text-secondary);">Click to upload or select a preset:</div>
+              <div id="dropPrompt" style="font-size:0.8rem; color:var(--text-secondary);">Click to upload or pick a preset:</div>
               <input type="file" id="imgFileInput" accept="image/*" style="display:none;" />
               <div class="sample-images">
                 <img class="sample-thumb active" src="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=100" alt="Cat" />
@@ -633,7 +632,7 @@
           <!-- TTS Tab -->
           <div class="tab-pane" id="pane-tts">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-              <span style="font-size:0.75rem; color:var(--text-secondary); text-transform:uppercase;">Model</span>
+              <span style="font-size:0.75rem; color:var(--text-secondary); text-transform:uppercase;">TTS Model</span>
               <select id="ttsModelSelect" class="btn-sm" style="background:#000; color:#fff; cursor:pointer;">
                 <option value="Xenova/mms-tts-eng" selected>Meta MMS (mms-tts-eng) — Fast & Reliable</option>
                 <option value="Xenova/speecht5_tts">SpeechT5 (speecht5_tts) — Multi-speaker</option>
@@ -658,10 +657,68 @@
             <button class="btn-primary" id="calcSimBtn">Calculate Cosine Similarity</button>
             <div class="output-box" id="embedOutput" style="min-height:60px;"></div>
           </div>
+
+          <!-- VRAM canRun() Tab -->
+          <div class="tab-pane" id="pane-vram">
+            <label style="font-size:0.75rem; color:var(--text-secondary); text-transform:uppercase;">Model Memory Size</label>
+            <div style="display:flex; gap:8px;">
+              <input type="text" class="input-field" id="vramInput" placeholder="e.g. 4GB, 2.5GB, 512MB" value="4GB" />
+              <button class="btn-primary" id="vramCheckBtn">Check canRun()</button>
+            </div>
+            <div style="display:flex; gap:6px;">
+              <button class="btn-sm" onclick="document.getElementById('vramInput').value='500MB'; document.getElementById('vramCheckBtn').click();">500MB</button>
+              <button class="btn-sm" onclick="document.getElementById('vramInput').value='1.5GB'; document.getElementById('vramCheckBtn').click();">1.5GB</button>
+              <button class="btn-sm" onclick="document.getElementById('vramInput').value='4GB'; document.getElementById('vramCheckBtn').click();">4GB</button>
+              <button class="btn-sm" onclick="document.getElementById('vramInput').value='8GB'; document.getElementById('vramCheckBtn').click();">8GB</button>
+            </div>
+            <div class="output-box" id="vramOutput"></div>
+          </div>
+
+          <!-- HF Hub Search Tab -->
+          <div class="tab-pane" id="pane-hub">
+            <div style="display:flex; gap:8px;">
+              <input type="text" class="input-field" id="hubSearchInput" placeholder="Search HF Hub (e.g. whisper, llama, vit)..." value="whisper" />
+              <button class="btn-primary" id="hubSearchBtn">Search Hub</button>
+            </div>
+            <div style="max-height:240px; overflow-y:auto; border:1px solid var(--surface-border); border-radius:6px;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Model ID</th>
+                    <th>Task</th>
+                    <th>Downloads</th>
+                  </tr>
+                </thead>
+                <tbody id="hubResultsBody">
+                  <tr><td colspan="3" style="text-align:center; color:var(--text-muted);">Click Search Hub to explore compatible models.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Cache Manager Tab -->
+          <div class="tab-pane" id="pane-cache">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:0.75rem; color:var(--text-secondary); text-transform:uppercase;">Browser Cached Models</span>
+              <button class="btn-sm" id="refreshCacheBtn">Refresh</button>
+            </div>
+            <div style="max-height:220px; overflow-y:auto; border:1px solid var(--surface-border); border-radius:6px;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Cache Namespace</th>
+                    <th>Files</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="cacheTableBody"></tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- Right Panel: Live Idiomatic Code with Color Highlighting -->
+      <!-- Right Panel: Live Code -->
       <div class="code-panel">
         <div class="code-header">
           <span>webml() code</span>
@@ -684,7 +741,7 @@
   </div>
 
   <script type="module">
-    // Code Snippets per task
+    // Idiomatic Code Snippets per tab
     const SNIPPETS = {
       asr: `<span class="syn-kw">import</span> webml <span class="syn-kw">from</span> <span class="syn-str">'webml-kit'</span><span class="syn-punc">;</span>
 
@@ -695,7 +752,7 @@
 <span class="syn-kw">const</span> <span class="syn-punc">{</span> text <span class="syn-punc">}</span> <span class="syn-punc">=</span> <span class="syn-kw">await</span> asr<span class="syn-punc">.</span><span class="syn-fn">transcribe</span><span class="syn-punc">(</span>audioFile<span class="syn-punc">);</span>
 console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class="syn-punc">(</span>text<span class="syn-punc">);</span>
 
-<span class="syn-cmt">// 3. Or listen live from microphone (using modern AudioWorklet):</span>
+<span class="syn-cmt">// 3. Or continuous live listening:</span>
 <span class="syn-kw">const</span> mic <span class="syn-punc">=</span> <span class="syn-kw">await</span> asr<span class="syn-punc">.</span><span class="syn-fn">listen</span><span class="syn-punc">({</span>
   <span class="syn-prop">onTranscript</span><span class="syn-punc">:</span> <span class="syn-punc">(</span>chunk<span class="syn-punc">)</span> <span class="syn-punc">=&gt;</span> console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class="syn-punc">(</span>chunk<span class="syn-punc">),</span>
 <span class="syn-punc">});</span>`,
@@ -703,7 +760,7 @@ console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class
       llm: `<span class="syn-kw">import</span> webml <span class="syn-kw">from</span> <span class="syn-str">'webml-kit'</span><span class="syn-punc">;</span>
 
 <span class="syn-cmt">// 1. Load LLM with 4-bit quantization</span>
-<span class="syn-kw">const</span> llm <span class="syn-punc">=</span> <span class="syn-kw">await</span> <span class="syn-fn">webml</span><span class="syn-punc">(</span><span class="syn-str">'onnx-community/Llama-3.2-1B-Instruct-ONNX'</span><span class="syn-punc">);</span>
+<span class="syn-kw">const</span> llm <span class="syn-punc">=</span> <span class="syn-kw">await</span> <span class="syn-fn">webml</span><span class="syn-punc">(</span><span class="syn-str">'onnx-community/Qwen2.5-0.5B-Instruct'</span><span class="syn-punc">);</span>
 
 <span class="syn-cmt">// 2. Stream tokens in real time</span>
 <span class="syn-kw">for</span> <span class="syn-kw">await</span> <span class="syn-punc">(</span><span class="syn-kw">const</span> <span class="syn-punc">{</span> token<span class="syn-punc">,</span> tps <span class="syn-punc">}</span> <span class="syn-punc">of</span> llm<span class="syn-punc">.</span><span class="syn-fn">stream</span><span class="syn-punc">(</span><span class="syn-str">'Why is the sky blue?'</span><span class="syn-punc">))</span> <span class="syn-punc">{</span>
@@ -721,7 +778,7 @@ console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class
 
       tts: `<span class="syn-kw">import</span> webml <span class="syn-kw">from</span> <span class="syn-str">'webml-kit'</span><span class="syn-punc">;</span>
 
-<span class="syn-cmt">// 1. Load Speech Synthesis model (e.g. Meta MMS or SpeechT5)</span>
+<span class="syn-cmt">// 1. Load Speech Synthesis model</span>
 <span class="syn-kw">const</span> tts <span class="syn-punc">=</span> <span class="syn-kw">await</span> <span class="syn-fn">webml</span><span class="syn-punc">(</span><span class="syn-str">'Xenova/mms-tts-eng'</span><span class="syn-punc">);</span>
 
 <span class="syn-cmt">// 2. Generate waveform audio tensor</span>
@@ -733,10 +790,33 @@ console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class
 <span class="syn-kw">const</span> embedder <span class="syn-punc">=</span> <span class="syn-kw">await</span> <span class="syn-fn">webml</span><span class="syn-punc">(</span><span class="syn-str">'Xenova/all-MiniLM-L6-v2'</span><span class="syn-punc">);</span>
 
 <span class="syn-cmt">// 2. Extract normalized vector embeddings</span>
-<span class="syn-kw">const</span> vector <span class="syn-punc">=</span> <span class="syn-kw">await</span> embedder<span class="syn-punc">.</span><span class="syn-fn">embed</span><span class="syn-punc">(</span><span class="syn-str">'Semantic search query'</span><span class="syn-punc">);</span>`
+<span class="syn-kw">const</span> vector <span class="syn-punc">=</span> <span class="syn-kw">await</span> embedder<span class="syn-punc">.</span><span class="syn-fn">embed</span><span class="syn-punc">(</span><span class="syn-str">'Semantic search query'</span><span class="syn-punc">);</span>`,
+
+      vram: `<span class="syn-kw">import</span> <span class="syn-punc">{</span> detectDevice<span class="syn-punc">,</span> canRun <span class="syn-punc">}</span> <span class="syn-kw">from</span> <span class="syn-str">'webml-kit'</span><span class="syn-punc">;</span>
+
+<span class="syn-cmt">// 1. Inspect hardware capabilities & VRAM</span>
+<span class="syn-kw">const</span> info <span class="syn-punc">=</span> <span class="syn-kw">await</span> <span class="syn-fn">detectDevice</span><span class="syn-punc">();</span>
+console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class="syn-punc">(</span>info<span class="syn-punc">.</span>backend<span class="syn-punc">,</span> info<span class="syn-punc">.</span>gpu<span class="syn-punc">?.</span>vramFormatted<span class="syn-punc">);</span>
+
+<span class="syn-cmt">// 2. Pre-flight check: Can this machine run 4GB weights?</span>
+<span class="syn-kw">const</span> check <span class="syn-punc">=</span> <span class="syn-kw">await</span> <span class="syn-fn">canRun</span><span class="syn-punc">(</span><span class="syn-str">'4GB'</span><span class="syn-punc">);</span>
+<span class="syn-kw">if</span> <span class="syn-punc">(!</span>check<span class="syn-punc">.</span>ok<span class="syn-punc">)</span> console<span class="syn-punc">.</span><span class="syn-fn">warn</span><span class="syn-punc">(</span>check<span class="syn-punc">.</span>reason<span class="syn-punc">);</span>`,
+
+      hub: `<span class="syn-kw">import</span> <span class="syn-punc">{</span> searchModels<span class="syn-punc">,</span> listWebGPUModels <span class="syn-punc">}</span> <span class="syn-kw">from</span> <span class="syn-str">'webml-kit'</span><span class="syn-punc">;</span>
+
+<span class="syn-cmt">// Discover WebGPU-compatible models on Hugging Face Hub</span>
+<span class="syn-kw">const</span> models <span class="syn-punc">=</span> <span class="syn-kw">await</span> <span class="syn-fn">searchModels</span><span class="syn-punc">({</span>
+  <span class="syn-prop">query</span><span class="syn-punc">:</span> <span class="syn-str">'whisper'</span><span class="syn-punc">,</span>
+  <span class="syn-prop">task</span><span class="syn-punc">:</span> <span class="syn-str">'automatic-speech-recognition'</span><span class="syn-punc">,</span>
+<span class="syn-punc">});</span>`,
+
+      cache: `<span class="syn-kw">import</span> <span class="syn-punc">{</span> isCached<span class="syn-punc">,</span> listCachedModels<span class="syn-punc">,</span> clearCache <span class="syn-punc">}</span> <span class="syn-kw">from</span> <span class="syn-str">'webml-kit'</span><span class="syn-punc">;</span>
+
+<span class="syn-cmt">// Inspect client-side cache and free memory</span>
+<span class="syn-kw">const</span> cached <span class="syn-punc">=</span> <span class="syn-kw">await</span> <span class="syn-fn">listCachedModels</span><span class="syn-punc">();</span>
+<span class="syn-kw">await</span> <span class="syn-fn">clearCache</span><span class="syn-punc">(</span><span class="syn-str">'onnx-community/whisper-tiny.en'</span><span class="syn-punc">);</span>`
     };
 
-    // DOM References
     const $ = (id) => document.getElementById(id);
     const codeSnippet = $('codeSnippet');
     const tabHeading = $('tabHeading');
@@ -749,6 +829,8 @@ console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class
     const cacheInfoText = $('cacheInfoText');
 
     let currentTab = 'asr';
+    let detectedGPU = null;
+
     function setTab(tab) {
       currentTab = tab;
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
@@ -760,7 +842,10 @@ console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class
         llm: 'Text Generation (LLM Streaming)',
         vision: 'Vision Transformer (ViT)',
         tts: 'Speech Synthesis (TTS)',
-        embed: 'Sentence Embeddings (MiniLM)'
+        embed: 'Sentence Embeddings (MiniLM)',
+        vram: 'Hardware VRAM Preflight (canRun)',
+        hub: 'Hugging Face Hub Discovery',
+        cache: 'Cache & Storage Manager'
       };
       tabHeading.textContent = titles[tab] || tab;
     }
@@ -774,7 +859,9 @@ console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class
     // Copy code snippet
     $('copyCodeBtn').addEventListener('click', () => {
       const text = codeSnippet.textContent;
-      navigator.clipboard.writeText(text);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).catch(() => {});
+      }
       $('copyBtnText').textContent = 'Copied!';
       setTimeout(() => $('copyBtnText').textContent = 'Copy Code', 1500);
     });
@@ -788,6 +875,7 @@ console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class
       const msg = e.data;
       if (msg.type === 'device-info') {
         const { backend, gpu, recommendedDtype } = msg.data;
+        detectedGPU = gpu;
         deviceDot.className = 'status-dot active';
         backendText.textContent = `${backend.toUpperCase()}`;
         if (gpu) {
@@ -813,7 +901,7 @@ console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class
       }
     });
 
-    // Cache management
+    // ─── Cache Management ───
     async function updateCacheDisplay() {
       if (typeof caches === 'undefined') {
         cacheInfoText.textContent = 'Cache: n/a';
@@ -821,13 +909,37 @@ console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class
       }
       try {
         const keys = await caches.keys();
-        let total = 0;
+        let totalFiles = 0;
+        const body = $('cacheTableBody');
+        body.innerHTML = '';
+
         for (const k of keys) {
           const c = await caches.open(k);
           const reqs = await c.keys();
-          total += reqs.length;
+          totalFiles += reqs.length;
+
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${k}</td>
+            <td>${reqs.length} files</td>
+            <td><button class="btn-sm" data-delete-cache="${k}">Delete</button></td>
+          `;
+          body.appendChild(tr);
         }
-        cacheInfoText.textContent = `Cached: ${keys.length} models (${total} files)`;
+
+        if (keys.length === 0) {
+          body.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">No models cached yet.</td></tr>';
+        }
+
+        cacheInfoText.textContent = `Cached: ${keys.length} models (${totalFiles} files)`;
+
+        document.querySelectorAll('[data-delete-cache]').forEach(b => {
+          b.addEventListener('click', async (e) => {
+            const name = e.target.getAttribute('data-delete-cache');
+            await caches.delete(name);
+            updateCacheDisplay();
+          });
+        });
       } catch {
         cacheInfoText.textContent = 'Cache: active';
       }
@@ -844,7 +956,9 @@ console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class
       }
     });
 
-    // ─── Tab 1: ASR with AudioWorkletNode (Zero Deprecation) ───
+    $('refreshCacheBtn')?.addEventListener('click', updateCacheDisplay);
+
+    // ─── Tab 1: ASR with AudioWorkletNode ───
     let isRecording = false;
     let audioCtx = null;
     let mediaStream = null;
@@ -906,7 +1020,6 @@ console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class
         workletNode.port.onmessage = (e) => onPcmChunk(e.data);
         source.connect(workletNode);
       } else {
-        // Fallback for legacy environments
         legacyProcessor = audioCtx.createScriptProcessor(4096, 1, 1);
         legacyProcessor.onaudioprocess = (e) => onPcmChunk(e.inputBuffer.getChannelData(0));
         source.connect(legacyProcessor);
@@ -926,21 +1039,10 @@ console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class
       micBtnText.textContent = 'Start Microphone';
       statusLabel.textContent = 'Transcribing...';
 
-      if (workletNode) {
-        workletNode.disconnect();
-        workletNode = null;
-      }
-      if (legacyProcessor) {
-        legacyProcessor.disconnect();
-        legacyProcessor = null;
-      }
-      if (mediaStream) {
-        mediaStream.getTracks().forEach(t => t.stop());
-        mediaStream = null;
-      }
-      if (audioCtx && audioCtx.state !== 'closed') {
-        audioCtx.close();
-      }
+      if (workletNode) { workletNode.disconnect(); workletNode = null; }
+      if (legacyProcessor) { legacyProcessor.disconnect(); legacyProcessor = null; }
+      if (mediaStream) { mediaStream.getTracks().forEach(t => t.stop()); mediaStream = null; }
+      if (audioCtx && audioCtx.state !== 'closed') audioCtx.close();
 
       let totalLen = 0;
       for (const chunk of pcmBuffer) totalLen += chunk.length;
@@ -957,6 +1059,7 @@ console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class
           worker.removeEventListener('message', onResult);
           asrOutput.textContent = e.data.data?.text || JSON.stringify(e.data.data);
           statusLabel.textContent = 'Transcribed';
+          updateCacheDisplay();
         }
       };
       worker.addEventListener('message', onResult);
@@ -989,6 +1092,7 @@ console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class
           worker.removeEventListener('message', onResult);
           asrOutput.textContent = e.data.data?.text || JSON.stringify(e.data.data);
           statusLabel.textContent = 'Transcribed JFK sample';
+          updateCacheDisplay();
         }
       };
       worker.addEventListener('message', onResult);
@@ -1044,6 +1148,7 @@ console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class
             llmSendBtn.disabled = false;
             llmStopBtn.disabled = true;
             statusLabel.textContent = 'Finished';
+            updateCacheDisplay();
           }
         }
       };
@@ -1129,6 +1234,7 @@ console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class
             });
           }
           statusLabel.textContent = 'Classified';
+          updateCacheDisplay();
         }
       };
       worker.addEventListener('message', onResult);
@@ -1141,7 +1247,6 @@ console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class
       });
     });
 
-    // ─── Tab 4: TTS ───
     // ─── Tab 4: TTS ───
     $('speakBtn').addEventListener('click', async () => {
       const text = $('ttsInput').value.trim();
@@ -1172,6 +1277,7 @@ console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class
           source.connect(ctx.destination);
           source.start();
           statusLabel.textContent = 'Playing synthesized audio';
+          updateCacheDisplay();
         }
       };
       worker.addEventListener('message', onResult);
@@ -1230,12 +1336,98 @@ console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class
             </div>
           `;
           statusLabel.textContent = 'Similarity calculated';
+          updateCacheDisplay();
         }
       };
       worker.addEventListener('message', onResult);
 
       worker.postMessage({ type: 'run', id: id1, task: 'feature-extraction', input: s1 });
       worker.postMessage({ type: 'run', id: id2, task: 'feature-extraction', input: s2 });
+    });
+
+    // ─── Tab 6: canRun() VRAM Calculator ───
+    function parseBytes(val) {
+      if (typeof val === 'number') return val;
+      const str = String(val).trim().toUpperCase();
+      const match = str.match(/^([\d.]+)\s*(GB|MB|KB|B)?$/);
+      if (!match) return 0;
+      const num = parseFloat(match[1]);
+      const unit = match[2] || 'B';
+      const multipliers = { B: 1, KB: 1024, MB: 1024 ** 2, GB: 1024 ** 3 };
+      return Math.round(num * multipliers[unit]);
+    }
+
+    $('vramCheckBtn')?.addEventListener('click', () => {
+      const inputStr = $('vramInput').value.trim();
+      const bytes = parseBytes(inputStr);
+      const vram = detectedGPU?.vram ?? 0;
+      const out = $('vramOutput');
+
+      if (!detectedGPU || vram === 0) {
+        out.innerHTML = `<strong>WASM / CPU Mode</strong><br><span style="color:var(--text-muted);">WebGPU adapter VRAM limits unavailable; will run via WASM SIMD.</span>`;
+        return;
+      }
+
+      const ok = bytes <= vram;
+      const neededFmt = (bytes / 1024 ** 3).toFixed(2) + ' GB';
+      const availFmt = detectedGPU.vramFormatted;
+
+      if (ok) {
+        out.innerHTML = `
+          <div style="color:#22c55e; font-weight:600; margin-bottom:4px;">✓ canRun: true</div>
+          <div>Model requirement: ${neededFmt}</div>
+          <div style="color:var(--text-muted);">Max GPU buffer limit: ${availFmt} (${detectedGPU.vendor})</div>
+        `;
+      } else {
+        out.innerHTML = `
+          <div style="color:#ef4444; font-weight:600; margin-bottom:4px;">✗ canRun: false</div>
+          <div>Model requirement: ${neededFmt} exceeds GPU limit (${availFmt})</div>
+          <div style="color:var(--text-muted);">Recommendation: Use q4 quantization or switch to smaller checkpoint.</div>
+        `;
+      }
+    });
+
+    // ─── Tab 7: Hugging Face Hub Search ───
+    $('hubSearchBtn')?.addEventListener('click', async () => {
+      const query = $('hubSearchInput').value.trim();
+      const tbody = $('hubResultsBody');
+      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">Searching Hugging Face Hub...</td></tr>';
+
+      try {
+        const url = `https://huggingface.co/api/models?search=${encodeURIComponent(query)}&filter=transformers.js&limit=10&full=true`;
+        const res = await fetch(url);
+        const data = await res.json();
+
+        tbody.innerHTML = '';
+        if (!Array.isArray(data) || data.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:var(--text-muted);">No matching models found.</td></tr>';
+          return;
+        }
+
+        data.forEach(m => {
+          const tr = document.createElement('tr');
+          const downloads = m.downloads ? m.downloads.toLocaleString() : '0';
+          const task = m.pipeline_tag || 'unknown';
+          tr.innerHTML = `
+            <td style="color:#fff; font-weight:500;">${m.id}</td>
+            <td><span class="brand-badge">${task}</span></td>
+            <td>${downloads}</td>
+          `;
+          tr.style.cursor = 'pointer';
+          tr.title = 'Click to inspect';
+          tr.addEventListener('click', () => {
+            $('tabHeading').textContent = `Inspected: ${m.id}`;
+            codeSnippet.innerHTML = `<span class="syn-kw">import</span> webml <span class="syn-kw">from</span> <span class="syn-str">'webml-kit'</span><span class="syn-punc">;</span>
+
+<span class="syn-cmt">// Load selected Hugging Face model</span>
+<span class="syn-kw">const</span> model <span class="syn-punc">=</span> <span class="syn-kw">await</span> <span class="syn-fn">webml</span><span class="syn-punc">(</span><span class="syn-str">'${m.id}'</span><span class="syn-punc">);</span>
+<span class="syn-kw">const</span> result <span class="syn-punc">=</span> <span class="syn-kw">await</span> <span class="syn-fn">model</span><span class="syn-punc">(</span>input<span class="syn-punc">);</span>`;
+          });
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="3" style="color:#ef4444;">Search failed: ${err.message}</td></tr>`;
+      }
     });
   </script>
 </body>

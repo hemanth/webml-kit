@@ -1,6 +1,6 @@
 /**
  * webml-kit Playground Worker
- * Supports Transformers.js pipelines and custom ONNX models via CDN.
+ * Full multi-task pipeline dispatcher with Promise caching and AutoProcessor support.
  */
 
 import {
@@ -13,8 +13,8 @@ import {
 // Configure transformers environment
 env.allowLocalModels = false;
 
-// State
-const pipelines = new Map();
+// Store promises of pipelines to prevent race conditions during downloading
+const instances = new Map();
 let stoppingCriteria = null;
 
 // Device check
@@ -88,43 +88,43 @@ function onProgress(event) {
 async function loadPipeline(config) {
   const key = `${config.task}::${config.modelId}`;
 
-  if (pipelines.has(key)) {
-    self.postMessage({ type: 'ready', modelKey: key });
-    return;
+  if (!instances.has(key)) {
+    const promise = (async () => {
+      const pipe = await pipeline(config.task, config.modelId, {
+        dtype: config.dtype ?? 'q4',
+        device: config.device ?? 'webgpu',
+        progress_callback: onProgress,
+      });
+
+      // Special handling for SpeechT5
+      if (config.task === 'text-to-speech' && config.modelId.includes('speecht5')) {
+        try {
+          const { AutoProcessor } = await import('https://esm.sh/@huggingface/transformers@4.1.0');
+          pipe.processor = await AutoProcessor.from_pretrained(config.modelId);
+        } catch (procErr) {
+          console.warn('AutoProcessor load error:', procErr);
+        }
+      }
+
+      // Warmup for text generation
+      if (config.task === 'text-generation' && pipe.tokenizer) {
+        try {
+          const warmupInputs = pipe.tokenizer('warm');
+          await pipe.model.generate({ ...warmupInputs, max_new_tokens: 1 });
+        } catch {}
+      }
+
+      return pipe;
+    })();
+
+    instances.set(key, promise);
   }
 
   try {
-    const pipe = await pipeline(config.task, config.modelId, {
-      dtype: config.dtype ?? 'q4',
-      device: config.device ?? 'webgpu',
-      progress_callback: onProgress,
-    });
-
-    // Special handling for models like SpeechT5 that require AutoProcessor
-    if (config.task === 'text-to-speech' && config.modelId.includes('speecht5')) {
-      try {
-        const { AutoProcessor } = await import('https://esm.sh/@huggingface/transformers@4.1.0');
-        pipe.processor = await AutoProcessor.from_pretrained(config.modelId);
-      } catch (procErr) {
-        console.warn('Could not load AutoProcessor for SpeechT5:', procErr);
-      }
-    }
-
-    pipelines.set(key, pipe);
-
-    // Warmup for text generation
-    if (config.task === 'text-generation' && pipe.tokenizer) {
-      try {
-        const warmupInputs = pipe.tokenizer('warm');
-        await pipe.model.generate({
-          ...warmupInputs,
-          max_new_tokens: 1,
-        });
-      } catch {}
-    }
-
+    await instances.get(key);
     self.postMessage({ type: 'ready', modelKey: key });
   } catch (err) {
+    instances.delete(key);
     self.postMessage({
       type: 'error',
       id: 'load',
@@ -204,17 +204,18 @@ async function runTextGeneration(id, generator, input, options = {}) {
 
 // Run inference dispatcher
 async function runInference(id, task, input, options = {}) {
-  let pipe = null;
+  let pipePromise = null;
   let matchedKey = '';
-  for (const [key, p] of pipelines) {
+
+  for (const [key, promise] of instances) {
     if (key.startsWith(task + '::')) {
-      pipe = p;
+      pipePromise = promise;
       matchedKey = key;
       break;
     }
   }
 
-  if (!pipe) {
+  if (!pipePromise) {
     self.postMessage({
       type: 'error',
       id,
@@ -224,6 +225,8 @@ async function runInference(id, task, input, options = {}) {
   }
 
   try {
+    const pipe = await pipePromise;
+
     if (task === 'text-generation') {
       await runTextGeneration(id, pipe, input, options);
     } else if (task === 'feature-extraction') {
@@ -252,7 +255,6 @@ async function runInference(id, task, input, options = {}) {
       } else {
         throw new Error('Text-to-speech model did not return an audio waveform');
       }
-    }
     } else {
       const result = await pipe(input, options);
       self.postMessage({ type: 'result', id, data: result });
@@ -286,11 +288,14 @@ self.addEventListener('message', async (e) => {
       break;
     case 'dispose': {
       if (msg.modelKey) {
-        pipelines.get(msg.modelKey)?.dispose?.();
-        pipelines.delete(msg.modelKey);
+        const p = instances.get(msg.modelKey);
+        if (p) p.then(inst => inst?.dispose?.());
+        instances.delete(msg.modelKey);
       } else {
-        for (const [, p] of pipelines) p?.dispose?.();
-        pipelines.clear();
+        for (const [, p] of instances) {
+          p.then(inst => inst?.dispose?.());
+        }
+        instances.clear();
       }
       break;
     }
