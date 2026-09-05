@@ -119,19 +119,15 @@ export async function listenMic(
   const audioCtx = new AudioCtx({ sampleRate });
   const source = audioCtx.createMediaStreamSource(stream);
 
-  // ScriptProcessor or AudioWorklet for gathering PCM
-  const bufferSize = 4096;
-  const processor = audioCtx.createScriptProcessor(bufferSize, 1, 1);
-
   let pcmBuffer: number[] = [];
   const maxSamples = Math.floor(sampleRate * intervalSeconds);
+  let workletNode: any = null;
+  let scriptProcessor: any = null;
 
-  processor.onaudioprocess = (e: any) => {
-    const inputData = e.inputBuffer.getChannelData(0);
+  const handleData = (inputData: Float32Array) => {
     for (let i = 0; i < inputData.length; i++) {
       pcmBuffer.push(inputData[i]);
     }
-
     if (pcmBuffer.length >= maxSamples) {
       const chunk = new Float32Array(pcmBuffer);
       pcmBuffer = [];
@@ -139,15 +135,47 @@ export async function listenMic(
     }
   };
 
-  source.connect(processor);
-  processor.connect(audioCtx.destination);
+  if (audioCtx.audioWorklet && typeof AudioWorkletNode !== 'undefined') {
+    const workletCode = `
+      class RecorderProcessor extends AudioWorkletProcessor {
+        process(inputs) {
+          const input = inputs[0];
+          if (input && input[0]) {
+            this.port.postMessage(input[0]);
+          }
+          return true;
+        }
+      }
+      registerProcessor('recorder-processor', RecorderProcessor);
+    `;
+    const blob = new Blob([workletCode], { type: 'application/javascript' });
+    const workletUrl = URL.createObjectURL(blob);
+    await audioCtx.audioWorklet.addModule(workletUrl);
+    URL.revokeObjectURL(workletUrl);
+
+    workletNode = new AudioWorkletNode(audioCtx, 'recorder-processor');
+    workletNode.port.onmessage = (e: any) => {
+      handleData(e.data);
+    };
+    source.connect(workletNode);
+  } else {
+    // Fallback for legacy environments lacking AudioWorklet
+    const bufferSize = 4096;
+    scriptProcessor = audioCtx.createScriptProcessor(bufferSize, 1, 1);
+    scriptProcessor.onaudioprocess = (e: any) => {
+      handleData(e.inputBuffer.getChannelData(0));
+    };
+    source.connect(scriptProcessor);
+    scriptProcessor.connect(audioCtx.destination);
+  }
 
   const stop = () => {
     if (pcmBuffer.length > 0) {
       onChunk(new Float32Array(pcmBuffer));
       pcmBuffer = [];
     }
-    processor.disconnect();
+    if (workletNode) workletNode.disconnect();
+    if (scriptProcessor) scriptProcessor.disconnect();
     source.disconnect();
     stream.getTracks().forEach((track: any) => track.stop());
     audioCtx.close();

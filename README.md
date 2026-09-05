@@ -6,7 +6,7 @@
 
 > Framework-agnostic utilities for loading and running ML models in the browser via WebGPU/WASM.
 
-**[🎮 Try the Live Playground](https://hemanth.github.io/webml-kit/)**
+**[Live Playground & Interactive Demos →](https://hemanth.github.io/webml-kit/)**
 
 If you've ever built a browser-ML demo, you know the drill: copy 150 lines of Web Worker boilerplate from the last project, wire up `postMessage`, add progress reporting, handle the GPU vanishing mid-inference, and pray the model is cached so your user doesn't wait 3 minutes. Every. Single. Time.
 

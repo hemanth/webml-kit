@@ -35,7 +35,6 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* Container */
     .container {
       width: 100%;
       max-width: 1080px;
@@ -143,6 +142,9 @@
       font-size: 0.75rem;
       font-family: var(--font-mono);
       cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
       transition: all 0.15s;
     }
     .btn-sm:hover {
@@ -183,13 +185,17 @@
       font-family: var(--font-sans);
       font-size: 0.85rem;
       font-weight: 500;
-      padding: 8px 16px;
+      padding: 8px 14px;
       cursor: pointer;
       display: flex;
       align-items: center;
       gap: 8px;
       transition: all 0.15s;
       white-space: nowrap;
+    }
+    .tab-btn svg {
+      stroke: currentColor;
+      flex-shrink: 0;
     }
     .tab-btn:hover {
       color: var(--text-primary);
@@ -201,14 +207,14 @@
       font-weight: 600;
     }
 
-    /* Main Workspace Layout (2 columns: Demo + Live Code) */
+    /* Main Workspace Layout */
     .workspace {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1.05fr 0.95fr;
       gap: 20px;
       min-height: 480px;
     }
-    @media (max-width: 860px) {
+    @media (max-width: 880px) {
       .workspace { grid-template-columns: 1fr; }
     }
 
@@ -271,7 +277,7 @@
       color: #000000;
       border: 1px solid #ffffff;
       border-radius: 6px;
-      padding: 10px 18px;
+      padding: 9px 16px;
       font-size: 0.85rem;
       font-weight: 600;
       cursor: pointer;
@@ -293,10 +299,13 @@
       color: var(--text-primary);
       border: 1px solid var(--surface-border);
       border-radius: 6px;
-      padding: 10px 16px;
+      padding: 9px 14px;
       font-size: 0.85rem;
       font-weight: 500;
       cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
       transition: all 0.15s;
     }
     .btn-secondary:hover {
@@ -340,13 +349,13 @@
     pre { margin: 0; white-space: pre-wrap; word-break: break-word; }
 
     /* Syntax Color Highlighting */
-    .syn-kw { color: #c084fc; font-weight: 600; }     /* keyword: import, await, const */
-    .syn-fn { color: #60a5fa; }                       /* function/method: webml, transcribe */
-    .syn-str { color: #4ade80; }                      /* strings: 'whisper-tiny.en' */
-    .syn-prop { color: #38bdf8; }                     /* properties/args: onTranscript */
-    .syn-cmt { color: #64748b; font-style: italic; }  /* comments: // comment */
-    .syn-num { color: #fbbf24; }                      /* numbers: 16000 */
-    .syn-punc { color: #94a3b8; }                     /* symbols: (), {}, ; */
+    .syn-kw { color: #c084fc; font-weight: 600; }     /* keyword */
+    .syn-fn { color: #60a5fa; }                       /* function/method */
+    .syn-str { color: #4ade80; }                      /* strings */
+    .syn-prop { color: #38bdf8; }                     /* properties/args */
+    .syn-cmt { color: #64748b; font-style: italic; }  /* comments */
+    .syn-num { color: #fbbf24; }                      /* numbers */
+    .syn-punc { color: #94a3b8; }                     /* symbols */
 
     /* Tab content panes */
     .tab-pane { display: none; }
@@ -369,8 +378,8 @@
       text-align: center;
     }
     .rec-pulse {
-      width: 14px;
-      height: 14px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
       background: #ef4444;
       display: none;
@@ -378,9 +387,9 @@
     }
     .rec-pulse.active { display: inline-block; }
     @keyframes pulse {
-      0% { transform: scale(0.95); opacity: 0.8; }
-      50% { transform: scale(1.3); opacity: 1; }
-      100% { transform: scale(0.95); opacity: 0.8; }
+      0% { transform: scale(0.9); opacity: 0.7; }
+      50% { transform: scale(1.4); opacity: 1; }
+      100% { transform: scale(0.9); opacity: 0.7; }
     }
     .output-box {
       background: #000000;
@@ -520,7 +529,10 @@
         <div class="telemetry-item" id="cacheInfoText">Cache: probing...</div>
       </div>
       <div class="telemetry-actions">
-        <button class="btn-sm" id="clearCacheBtn" title="Free stored models in browser cache">Clear Cache</button>
+        <button class="btn-sm" id="clearCacheBtn" title="Free stored models in browser cache">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+          <span>Clear Cache</span>
+        </button>
       </div>
     </div>
 
@@ -529,13 +541,28 @@
       <div class="progress-bar-fill" id="progressBarFill"></div>
     </div>
 
-    <!-- Task Switcher Tabs -->
+    <!-- Task Switcher Tabs with Monochrome SVG Icons -->
     <div class="tabs-nav">
-      <button class="tab-btn active" data-tab="asr">🎙️ Speech (Whisper)</button>
-      <button class="tab-btn" data-tab="llm">💬 Chat (LLM)</button>
-      <button class="tab-btn" data-tab="vision">🖼️ Vision (ViT)</button>
-      <button class="tab-btn" data-tab="tts">🔊 Speech Synthesis (TTS)</button>
-      <button class="tab-btn" data-tab="embed">🔍 Embeddings (MiniLM)</button>
+      <button class="tab-btn active" data-tab="asr">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+        <span>Speech (Whisper)</span>
+      </button>
+      <button class="tab-btn" data-tab="llm">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span>Chat (LLM)</span>
+      </button>
+      <button class="tab-btn" data-tab="vision">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+        <span>Vision (ViT)</span>
+      </button>
+      <button class="tab-btn" data-tab="tts">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+        <span>Speech Synthesis (TTS)</span>
+      </button>
+      <button class="tab-btn" data-tab="embed">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="12" r="3"/><line x1="8.59" y1="7.49" x2="15.42" y2="10.51"/><line x1="8.59" y1="16.51" x2="15.42" y2="13.49"/></svg>
+        <span>Embeddings (MiniLM)</span>
+      </button>
     </div>
 
     <!-- Playground Workspace -->
@@ -555,12 +582,16 @@
                 <div style="display:flex; align-items:center; gap:8px;">
                   <button class="btn-primary" id="micBtn">
                     <span class="rec-pulse" id="micPulse"></span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
                     <span id="micBtnText">Start Microphone</span>
                   </button>
-                  <button class="btn-secondary" id="sampleAudioBtn">Play Sample Voice</button>
+                  <button class="btn-secondary" id="sampleAudioBtn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    <span>Sample Voice</span>
+                  </button>
                 </div>
                 <div style="font-size:0.75rem; color:var(--text-muted);">
-                  Auto-resamples to 16kHz mono. Chunks audio directly to in-browser Whisper.
+                  Captures via modern AudioWorkletNode. Zero audio lag, no deprecated ScriptProcessor.
                 </div>
               </div>
             </div>
@@ -587,12 +618,12 @@
           <div class="tab-pane" id="pane-vision">
             <div class="image-dropzone" id="imgDropzone">
               <img id="imgPreview" class="preview-img" alt="preview" />
-              <div id="dropPrompt" style="font-size:0.8rem; color:var(--text-secondary);">Click to upload or pick a preset:</div>
+              <div id="dropPrompt" style="font-size:0.8rem; color:var(--text-secondary);">Click to upload or select a preset:</div>
               <input type="file" id="imgFileInput" accept="image/*" style="display:none;" />
               <div class="sample-images">
-                <img class="sample-thumb active" src="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=100" alt="Cat" data-name="Cat" />
-                <img class="sample-thumb" src="https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=100" alt="Car" data-name="Car" />
-                <img class="sample-thumb" src="https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=100" alt="Dog" data-name="Dog" />
+                <img class="sample-thumb active" src="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=100" alt="Cat" />
+                <img class="sample-thumb" src="https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=100" alt="Car" />
+                <img class="sample-thumb" src="https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=100" alt="Dog" />
               </div>
             </div>
             <button class="btn-primary" id="classifyBtn">Classify Image</button>
@@ -602,7 +633,10 @@
           <!-- TTS Tab -->
           <div class="tab-pane" id="pane-tts">
             <textarea class="input-field" id="ttsInput" placeholder="Enter text to speak...">WebML kit makes in-browser machine learning fast and accessible.</textarea>
-            <button class="btn-primary" id="speakBtn">Synthesize & Play Audio</button>
+            <button class="btn-primary" id="speakBtn">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+              <span>Synthesize & Play Audio</span>
+            </button>
             <div style="font-size:0.75rem; color:var(--text-muted);">
               Generates raw Float32Array waveform samples and plays via Web Audio API.
             </div>
@@ -624,7 +658,10 @@
       <div class="code-panel">
         <div class="code-header">
           <span>webml() code</span>
-          <button class="btn-sm" id="copyCodeBtn">Copy Code</button>
+          <button class="btn-sm" id="copyCodeBtn">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+            <span id="copyBtnText">Copy Code</span>
+          </button>
         </div>
         <div class="code-body">
           <pre><code id="codeSnippet"></code></pre>
@@ -651,7 +688,7 @@
 <span class="syn-kw">const</span> <span class="syn-punc">{</span> text <span class="syn-punc">}</span> <span class="syn-punc">=</span> <span class="syn-kw">await</span> asr<span class="syn-punc">.</span><span class="syn-fn">transcribe</span><span class="syn-punc">(</span>audioFile<span class="syn-punc">);</span>
 console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class="syn-punc">(</span>text<span class="syn-punc">);</span>
 
-<span class="syn-cmt">// 3. Or listen live from microphone:</span>
+<span class="syn-cmt">// 3. Or listen live from microphone (using modern AudioWorklet):</span>
 <span class="syn-kw">const</span> mic <span class="syn-punc">=</span> <span class="syn-kw">await</span> asr<span class="syn-punc">.</span><span class="syn-fn">listen</span><span class="syn-punc">({</span>
   <span class="syn-prop">onTranscript</span><span class="syn-punc">:</span> <span class="syn-punc">(</span>chunk<span class="syn-punc">)</span> <span class="syn-punc">=&gt;</span> console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class="syn-punc">(</span>chunk<span class="syn-punc">),</span>
 <span class="syn-punc">});</span>`,
@@ -731,13 +768,12 @@ console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class
     $('copyCodeBtn').addEventListener('click', () => {
       const text = codeSnippet.textContent;
       navigator.clipboard.writeText(text);
-      $('copyCodeBtn').textContent = 'Copied!';
-      setTimeout(() => $('copyCodeBtn').textContent = 'Copy Code', 1500);
+      $('copyBtnText').textContent = 'Copied!';
+      setTimeout(() => $('copyBtnText').textContent = 'Copy Code', 1500);
     });
 
     // Worker setup
     const worker = new Worker('worker.js', { type: 'module' });
-    let isBusy = false;
 
     worker.postMessage({ type: 'check' });
 
@@ -764,11 +800,9 @@ console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class
       } else if (msg.type === 'ready') {
         statusLabel.textContent = 'Model Ready';
         progressBarContainer.classList.remove('active');
-        isBusy = false;
       } else if (msg.type === 'error') {
         statusLabel.textContent = `Error: ${msg.data}`;
         progressBarContainer.classList.remove('active');
-        isBusy = false;
       }
     });
 
@@ -803,11 +837,12 @@ console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class
       }
     });
 
-    // ─── Tab 1: ASR ───
+    // ─── Tab 1: ASR with AudioWorkletNode (Zero Deprecation) ───
     let isRecording = false;
     let audioCtx = null;
     let mediaStream = null;
-    let processorNode = null;
+    let workletNode = null;
+    let legacyProcessor = null;
     let pcmBuffer = [];
 
     const micBtn = $('micBtn');
@@ -830,19 +865,46 @@ console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class
         config: { task: 'automatic-speech-recognition', modelId: 'onnx-community/whisper-tiny.en', dtype: 'q4' }
       });
 
-      mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+      mediaStream = await navigator.mediaDevices.getUserMedia({
+        audio: { sampleRate: 16000, channelCount: 1, echoCancellation: true, noiseSuppression: true }
+      });
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      audioCtx = new AudioContextClass({ sampleRate: 16000 });
       const source = audioCtx.createMediaStreamSource(mediaStream);
-      processorNode = audioCtx.createScriptProcessor(4096, 1, 1);
 
       pcmBuffer = [];
-      processorNode.onaudioprocess = (e) => {
-        const channel = e.inputBuffer.getChannelData(0);
-        pcmBuffer.push(new Float32Array(channel));
+      const onPcmChunk = (chunk) => {
+        pcmBuffer.push(new Float32Array(chunk));
       };
 
-      source.connect(processorNode);
-      processorNode.connect(audioCtx.destination);
+      if (audioCtx.audioWorklet && typeof AudioWorkletNode !== 'undefined') {
+        const workletCode = `
+          class PcmCaptureProcessor extends AudioWorkletProcessor {
+            process(inputs) {
+              const input = inputs[0];
+              if (input && input[0]) {
+                this.port.postMessage(input[0]);
+              }
+              return true;
+            }
+          }
+          registerProcessor('pcm-capture-processor', PcmCaptureProcessor);
+        `;
+        const blob = new Blob([workletCode], { type: 'application/javascript' });
+        const workletUrl = URL.createObjectURL(blob);
+        await audioCtx.audioWorklet.addModule(workletUrl);
+        URL.revokeObjectURL(workletUrl);
+
+        workletNode = new AudioWorkletNode(audioCtx, 'pcm-capture-processor');
+        workletNode.port.onmessage = (e) => onPcmChunk(e.data);
+        source.connect(workletNode);
+      } else {
+        // Fallback for legacy environments
+        legacyProcessor = audioCtx.createScriptProcessor(4096, 1, 1);
+        legacyProcessor.onaudioprocess = (e) => onPcmChunk(e.inputBuffer.getChannelData(0));
+        source.connect(legacyProcessor);
+        legacyProcessor.connect(audioCtx.destination);
+      }
 
       isRecording = true;
       micPulse.classList.add('active');
@@ -857,8 +919,21 @@ console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class
       micBtnText.textContent = 'Start Microphone';
       statusLabel.textContent = 'Transcribing...';
 
-      if (processorNode) processorNode.disconnect();
-      if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
+      if (workletNode) {
+        workletNode.disconnect();
+        workletNode = null;
+      }
+      if (legacyProcessor) {
+        legacyProcessor.disconnect();
+        legacyProcessor = null;
+      }
+      if (mediaStream) {
+        mediaStream.getTracks().forEach(t => t.stop());
+        mediaStream = null;
+      }
+      if (audioCtx && audioCtx.state !== 'closed') {
+        audioCtx.close();
+      }
 
       let totalLen = 0;
       for (const chunk of pcmBuffer) totalLen += chunk.length;
@@ -891,7 +966,8 @@ console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class
       statusLabel.textContent = 'Loading sample audio...';
       const res = await fetch('https://huggingface.co/datasets/Xenova/transformers.js-docs/resolve/main/jfk.wav');
       const buf = await res.arrayBuffer();
-      const ctx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      const ctx = new AudioContextClass({ sampleRate: 16000 });
       const decoded = await ctx.decodeAudioData(buf);
       const float32 = decoded.getChannelData(0);
 
@@ -1074,7 +1150,8 @@ console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class
         if (e.data.id === id) {
           worker.removeEventListener('message', onResult);
           const { audio, sampling_rate } = e.data.data;
-          const ctx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: sampling_rate });
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          const ctx = new AudioContextClass({ sampleRate: sampling_rate });
           const buffer = ctx.createBuffer(1, audio.length, sampling_rate);
           buffer.copyToChannel(new Float32Array(audio), 0);
           const source = ctx.createBufferSource();
