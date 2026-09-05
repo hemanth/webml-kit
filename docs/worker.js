@@ -91,6 +91,17 @@ async function loadPipeline(config) {
 
   if (!instances.has(key)) {
     const promise = (async () => {
+      // Special handling for Kokoro TTS
+      if (config.modelId.includes('Kokoro')) {
+        const { KokoroTTS } = await import('https://cdn.jsdelivr.net/npm/kokoro-js@1.2.1/+esm');
+        const tts = await KokoroTTS.from_pretrained(config.modelId, {
+          dtype: config.dtype ?? 'q8',
+          device: config.device ?? 'wasm',
+          progress_callback: onProgress,
+        });
+        return tts;
+      }
+
       const pipe = await pipeline(config.task, config.modelId, {
         dtype: config.dtype ?? (config.task === 'text-generation' ? 'q4' : 'fp32'),
         device: config.device ?? 'webgpu',
@@ -246,6 +257,21 @@ async function runInference(id, task, input, options = {}) {
       const data = output.tolist ? output.tolist() : Array.from(output.data || []);
       self.postMessage({ type: 'result', id, data });
     } else if (task === 'text-to-speech') {
+      if (matchedKey.includes('Kokoro')) {
+        const voice = options.voice || 'af_heart';
+        const speed = options.speed || 1;
+        const res = await pipe.generate(input, { voice, speed });
+        self.postMessage({
+          type: 'result',
+          id,
+          data: {
+            audio: Array.from(res.audio),
+            sampling_rate: res.sampling_rate || 24000,
+          },
+        });
+        return;
+      }
+
       let output;
       if (matchedKey.includes('speecht5')) {
         const speakerEmbeddings = options.speaker_embeddings ||

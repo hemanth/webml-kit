@@ -672,14 +672,35 @@
 
           <!-- TTS Tab -->
           <div class="tab-pane" id="pane-tts">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
               <span style="font-size:0.75rem; color:var(--text-secondary); text-transform:uppercase;">TTS Model</span>
               <select id="ttsModelSelect" class="btn-sm" style="background:#000; color:#fff; cursor:pointer;">
-                <option value="Xenova/mms-tts-eng" selected>Meta MMS (mms-tts-eng) — Fast & Reliable</option>
+                <option value="onnx-community/Kokoro-82M-v1.0-ONNX" selected>Kokoro-82M (Kokoro-82M-v1.0-ONNX) — Frontier Quality (24kHz)</option>
+                <option value="Xenova/mms-tts-eng">Meta MMS (mms-tts-eng) — Fast & Lightweight</option>
                 <option value="Xenova/speecht5_tts">SpeechT5 (speecht5_tts) — Multi-speaker</option>
               </select>
             </div>
-            <textarea class="input-field" id="ttsInput" placeholder="Enter text to speak...">WebML kit makes in-browser machine learning fast and accessible.</textarea>
+            <div id="kokoroVoiceRow" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <span style="font-size:0.75rem; color:var(--text-secondary); text-transform:uppercase;">Voice Style</span>
+              <select id="ttsVoiceSelect" class="btn-sm" style="background:#000; color:#fff; cursor:pointer;">
+                <option value="af_heart" selected>af_heart (Female · Warm/Natural · Grade A)</option>
+                <option value="af_bella">af_bella (Female · Expressive · Grade A-)</option>
+                <option value="af_nicole">af_nicole (Female · Podcast/Conversational)</option>
+                <option value="am_michael">am_michael (Male · Clear/Natural)</option>
+                <option value="am_fenrir">am_fenrir (Male · Deep/Rich)</option>
+                <option value="bf_emma">bf_emma (British Female · Refined)</option>
+                <option value="bm_george">bm_george (British Male · Broadcast)</option>
+              </select>
+            </div>
+            <div id="kokoroSpeedRow" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <span style="font-size:0.75rem; color:var(--text-secondary); text-transform:uppercase;">Speaking Rate</span>
+              <select id="ttsSpeedSelect" class="btn-sm" style="background:#000; color:#fff; cursor:pointer;">
+                <option value="1.0" selected>1.0x (Normal)</option>
+                <option value="1.2">1.2x (Brisk)</option>
+                <option value="0.85">0.85x (Relaxed)</option>
+              </select>
+            </div>
+            <textarea class="input-field" id="ttsInput" placeholder="Enter text to speak...">WebML kit makes in-browser machine learning fast, accessible, and delightful.</textarea>
             <button class="btn-primary" id="speakBtn">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
               <span>Synthesize & Play Audio</span>
@@ -910,11 +931,14 @@ console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class
 
       tts: `<span class="syn-kw">import</span> webml <span class="syn-kw">from</span> <span class="syn-str">'webml-kit'</span><span class="syn-punc">;</span>
 
-<span class="syn-cmt">// 1. Load Speech Synthesis model</span>
-<span class="syn-kw">const</span> tts <span class="syn-punc">=</span> <span class="syn-kw">await</span> <span class="syn-fn">webml</span><span class="syn-punc">(</span><span class="syn-str">'Xenova/mms-tts-eng'</span><span class="syn-punc">);</span>
+<span class="syn-cmt">// 1. Load frontier Kokoro-82M TTS model (24kHz studio quality)</span>
+<span class="syn-kw">const</span> tts <span class="syn-punc">=</span> <span class="syn-kw">await</span> <span class="syn-fn">webml</span><span class="syn-punc">(</span><span class="syn-str">'onnx-community/Kokoro-82M-v1.0-ONNX'</span><span class="syn-punc">,</span> <span class="syn-punc">{</span> <span class="syn-prop">dtype</span><span class="syn-punc">:</span> <span class="syn-str">'q8'</span> <span class="syn-punc">});</span>
 
-<span class="syn-cmt">// 2. Generate waveform audio tensor</span>
-<span class="syn-kw">const</span> <span class="syn-punc">{</span> audio<span class="syn-punc">,</span> sampling_rate <span class="syn-punc">}</span> <span class="syn-punc">=</span> <span class="syn-kw">await</span> <span class="syn-fn">tts</span><span class="syn-punc">(</span><span class="syn-str">'Hello from WebML!'</span><span class="syn-punc">);</span>`,
+<span class="syn-cmt">// 2. Synthesize natural human speech with customizable voices</span>
+<span class="syn-kw">const</span> <span class="syn-punc">{</span> audio<span class="syn-punc">,</span> sampling_rate <span class="syn-punc">}</span> <span class="syn-punc">=</span> <span class="syn-kw">await</span> <span class="syn-fn">tts</span><span class="syn-punc">(</span><span class="syn-str">'Hello from Kokoro TTS!'</span><span class="syn-punc">,</span> <span class="syn-punc">{</span>
+  <span class="syn-prop">voice</span><span class="syn-punc">:</span> <span class="syn-str">'af_heart'</span><span class="syn-punc">,</span> <span class="syn-cmt">// 'af_heart' | 'af_bella' | 'am_michael' | 'bf_emma'</span>
+  <span class="syn-prop">speed</span><span class="syn-punc">:</span> <span class="syn-num">1.0</span><span class="syn-punc">,</span>
+<span class="syn-punc">});</span>`,
 
       embed: `<span class="syn-kw">import</span> webml <span class="syn-kw">from</span> <span class="syn-str">'webml-kit'</span><span class="syn-punc">;</span>
 
@@ -1551,15 +1575,29 @@ recovery<span class="syn-punc">.</span><span class="syn-fn">watchDevice</span><s
     });
 
     // ─── Tab 5: TTS ───
+    const ttsModelSelect = $('ttsModelSelect');
+    const kokoroVoiceRow = $('kokoroVoiceRow');
+    const kokoroSpeedRow = $('kokoroSpeedRow');
+
+    ttsModelSelect?.addEventListener('change', () => {
+      const isKokoro = ttsModelSelect.value.includes('Kokoro');
+      if (kokoroVoiceRow) kokoroVoiceRow.style.display = isKokoro ? 'flex' : 'none';
+      if (kokoroSpeedRow) kokoroSpeedRow.style.display = isKokoro ? 'flex' : 'none';
+    });
+
     $('speakBtn').addEventListener('click', async () => {
       const text = $('ttsInput').value.trim();
       if (!text) return;
-      const modelId = $('ttsModelSelect') ? $('ttsModelSelect').value : 'Xenova/mms-tts-eng';
+      const modelId = ttsModelSelect ? ttsModelSelect.value : 'onnx-community/Kokoro-82M-v1.0-ONNX';
+      const voice = $('ttsVoiceSelect') ? $('ttsVoiceSelect').value : 'af_heart';
+      const speed = $('ttsSpeedSelect') ? parseFloat($('ttsSpeedSelect').value) : 1.0;
+      const dtype = modelId.includes('Kokoro') ? 'q8' : 'fp32';
+
       statusLabel.textContent = `Loading ${modelId.split('/')[1]}...`;
 
       worker.postMessage({
         type: 'load',
-        config: { task: 'text-to-speech', modelId, dtype: 'fp32' }
+        config: { task: 'text-to-speech', modelId, dtype }
       });
 
       const id = 'tts-' + Date.now();
@@ -1579,7 +1617,7 @@ recovery<span class="syn-punc">.</span><span class="syn-fn">watchDevice</span><s
           source.buffer = buffer;
           source.connect(ctx.destination);
           source.start();
-          statusLabel.textContent = 'Playing synthesized audio';
+          statusLabel.textContent = `Playing ${modelId.includes('Kokoro') ? 'Kokoro (' + voice + ')' : 'audio'}`;
           updateCacheDisplay();
         }
       };
@@ -1589,7 +1627,8 @@ recovery<span class="syn-punc">.</span><span class="syn-fn">watchDevice</span><s
         type: 'run',
         id,
         task: 'text-to-speech',
-        input: text
+        input: text,
+        options: { voice, speed }
       });
     });
 

@@ -97,6 +97,14 @@ export async function inferTask(modelId: string): Promise<PipelineTask> {
 
   // Fast heuristic matching
   if (
+    lower.includes('kokoro') ||
+    lower.includes('speecht5') ||
+    lower.includes('mms-tts') ||
+    lower.includes('tts')
+  ) {
+    return 'text-to-speech';
+  }
+  if (
     lower.includes('whisper') ||
     lower.includes('asr') ||
     lower.includes('speech') ||

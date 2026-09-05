@@ -48,10 +48,12 @@
   },
   "dependencies": {
     "@huggingface/transformers": "^4.1.0",
+    "kokoro-js": "^1.2.1",
     "onnxruntime-web": "^1.29.0"
   },
   "devDependencies": {
     "@webgpu/types": "^0.1.69",
+    "playwright": "^1.63.0",
     "typescript": "^5.7.0",
     "vitest": "^4.1.4"
   }

@@ -173,8 +173,8 @@ async function runE2ETests() {
 
   await page.waitForFunction(() => {
     const status = document.getElementById('statusLabel')?.innerText || '';
-    return status.includes('Playing') || status.includes('synthesized') || status.includes('Ready');
-  }, { timeout: 60000 });
+    return status.includes('Playing');
+  }, { timeout: 120000 });
   console.log(`        ✓ TTS Status: "${await page.locator('#statusLabel').innerText()}"`);
 
   // ─── TAB 6: Embeddings (MiniLM) ───

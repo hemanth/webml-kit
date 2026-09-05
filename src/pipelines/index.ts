@@ -51,8 +51,8 @@ export const PIPELINE_REGISTRY: Record<PipelineTask, PipelineDefaults> = {
     usesKVCache: false,
   },
   'text-to-speech': {
-    defaultModel: 'Xenova/speecht5_tts',
-    defaultDtype: 'fp32',
+    defaultModel: 'onnx-community/Kokoro-82M-v1.0-ONNX',
+    defaultDtype: 'q8',
     supportsStreaming: false,
     usesKVCache: false,
   },
