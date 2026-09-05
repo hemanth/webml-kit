@@ -6,6 +6,8 @@
 
 > Framework-agnostic utilities for loading and running ML models in the browser via WebGPU/WASM.
 
+**[🎮 Try the Live Playground](https://hemanth.github.io/webml-kit/)**
+
 If you've ever built a browser-ML demo, you know the drill: copy 150 lines of Web Worker boilerplate from the last project, wire up `postMessage`, add progress reporting, handle the GPU vanishing mid-inference, and pray the model is cached so your user doesn't wait 3 minutes. Every. Single. Time.
 
 This library does that part for you. It wraps [`@huggingface/transformers`](https://huggingface.co/docs/transformers.js) with a sane API and handles the ugly bits: device detection, model caching, token streaming, KV-cache management, and GPU recovery.
