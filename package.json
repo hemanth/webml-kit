@@ -25,6 +25,7 @@
     "dev": "tsc --watch",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "node test/e2e-playground.mjs",
     "clean": "rm -rf dist",
     "prepublishOnly": "npm run clean && npm run build"
   },

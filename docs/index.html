@@ -542,6 +542,10 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
         <span>Vision (ViT)</span>
       </button>
+      <button class="tab-btn" data-tab="detect">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="22" x2="18" y1="12" y2="12"/><line x1="6" x2="2" y1="12" y2="12"/><line x1="12" x2="12" y1="6" y2="2"/><line x1="12" x2="12" y1="22" y2="18"/></svg>
+        <span>Detection (YOLO)</span>
+      </button>
       <button class="tab-btn" data-tab="tts">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
         <span>Speech (TTS)</span>
@@ -554,6 +558,10 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9"/><path d="M9 1v3"/><path d="M15 1v3"/><path d="M9 20v3"/><path d="M15 20v3"/><path d="M20 9h3"/><path d="M20 14h3"/><path d="M1 9h3"/><path d="M1 14h3"/></svg>
         <span>canRun() VRAM</span>
       </button>
+      <button class="tab-btn" data-tab="registry">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10"/><path d="M6 10h10"/><path d="M6 14h6"/></svg>
+        <span>Task Registry</span>
+      </button>
       <button class="tab-btn" data-tab="hub">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/></svg>
         <span>HF Hub Search</span>
@@ -561,6 +569,10 @@
       <button class="tab-btn" data-tab="cache">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="8" x="2" y="2" rx="2"/><rect width="20" height="8" x="2" y="14" rx="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></svg>
         <span>Cache Manager</span>
+      </button>
+      <button class="tab-btn" data-tab="recovery">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span>GPU Resilience</span>
       </button>
     </div>
 
@@ -600,6 +612,13 @@
 
           <!-- LLM Tab -->
           <div class="tab-pane" id="pane-llm">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <span style="font-size:0.75rem; color:var(--text-secondary); text-transform:uppercase;">Model</span>
+              <select id="llmModelSelect" class="btn-sm" style="background:#000; color:#fff; cursor:pointer;">
+                <option value="HuggingFaceTB/SmolLM2-135M-Instruct" selected>SmolLM2-135M (Ultra Fast · 135M)</option>
+                <option value="onnx-community/Qwen2.5-0.5B-Instruct">Qwen2.5-0.5B (Conversational · 500M)</option>
+              </select>
+            </div>
             <div class="chat-history" id="chatHistory">
               <div class="chat-msg assistant">
                 Hello! I am running locally in your browser with WebGPU. Ask me anything.
@@ -627,6 +646,28 @@
             </div>
             <button class="btn-primary" id="classifyBtn">Classify Image</button>
             <div id="visionResults" style="display:flex; flex-direction:column; gap:8px;"></div>
+          </div>
+
+          <!-- Object Detection Tab -->
+          <div class="tab-pane" id="pane-detect">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <span style="font-size:0.75rem; color:var(--text-secondary); text-transform:uppercase;">Model</span>
+              <select id="detectModelSelect" class="btn-sm" style="background:#000; color:#fff; cursor:pointer;">
+                <option value="Xenova/yolos-tiny" selected>YOLOS Tiny (Xenova/yolos-tiny) — Fast</option>
+                <option value="Xenova/detr-resnet-50">DETR ResNet-50 (detr-resnet-50) — Accurate</option>
+              </select>
+            </div>
+            <div style="position:relative; border:1px solid var(--surface-border); border-radius:6px; overflow:hidden; background:#0a0a0a; text-align:center; min-height:180px; display:flex; align-items:center; justify-content:center; margin-bottom:8px;">
+              <canvas id="detectCanvas" style="max-width:100%; max-height:260px; display:block; margin:auto;"></canvas>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px; flex-wrap:wrap;">
+              <button class="btn-primary" id="detectBtn">Detect Objects</button>
+              <button class="btn-sm" id="detectPresetCats">Preset: Cats</button>
+              <button class="btn-sm" id="detectPresetStreet">Preset: Street</button>
+              <input type="file" id="detectFileInput" accept="image/*" style="display:none;" />
+              <button class="btn-sm" id="detectUploadBtn">Upload</button>
+            </div>
+            <div id="detectResults" style="display:flex; flex-direction:column; gap:6px; font-family:var(--font-mono); font-size:0.78rem;"></div>
           </div>
 
           <!-- TTS Tab -->
@@ -672,6 +713,57 @@
               <button class="btn-sm" onclick="document.getElementById('vramInput').value='8GB'; document.getElementById('vramCheckBtn').click();">8GB</button>
             </div>
             <div class="output-box" id="vramOutput"></div>
+            <div style="margin-top:12px; border-top:1px solid var(--border-subtle); padding-top:10px;">
+              <div style="font-size:0.75rem; color:var(--text-secondary); text-transform:uppercase; margin-bottom:6px;">Device Specs & Limits (detectDevice)</div>
+              <div id="vramSpecsGrid" style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-family:var(--font-mono); font-size:0.75rem; color:var(--text-secondary);">
+                <div>Backend: <span id="specBackend" style="color:#fff;">--</span></div>
+                <div>Max Buffer: <span id="specMaxBuffer" style="color:#fff;">--</span></div>
+                <div>Architecture: <span id="specArch" style="color:#fff;">--</span></div>
+                <div>Recommended Dtype: <span id="specDtype" style="color:#22c55e;">--</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Task Registry & inferTask Tab -->
+          <div class="tab-pane" id="pane-registry">
+            <div style="margin-bottom:10px;">
+              <label style="font-size:0.75rem; color:var(--text-secondary); text-transform:uppercase;">inferTask() Live Tester</label>
+              <div style="display:flex; gap:8px; margin-top:4px;">
+                <input type="text" class="input-field" id="inferTaskInput" value="onnx-community/whisper-tiny.en" placeholder="Enter any model identifier..." />
+                <span id="inferTaskBadge" class="brand-badge" style="display:flex; align-items:center; white-space:nowrap; background:#fff; color:#000; font-weight:600; padding:0 10px;">automatic-speech-recognition</span>
+              </div>
+              <div style="display:flex; gap:6px; margin-top:6px; flex-wrap:wrap;">
+                <button class="btn-sm" onclick="testInfer('onnx-community/whisper-tiny.en')">whisper</button>
+                <button class="btn-sm" onclick="testInfer('onnx-community/Llama-3.2-1B-Instruct')">llama</button>
+                <button class="btn-sm" onclick="testInfer('Xenova/vit-base-patch16-224')">vit</button>
+                <button class="btn-sm" onclick="testInfer('Xenova/yolos-tiny')">yolo</button>
+                <button class="btn-sm" onclick="testInfer('Xenova/all-MiniLM-L6-v2')">minilm</button>
+                <button class="btn-sm" onclick="testInfer('Xenova/speecht5_tts')">speecht5</button>
+              </div>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <span style="font-size:0.75rem; color:var(--text-secondary); text-transform:uppercase;">PIPELINE_REGISTRY (18 Built-in Tasks)</span>
+              <div style="display:flex; gap:4px;" id="registryFilterChips">
+                <button class="btn-sm active" data-filter="all">All</button>
+                <button class="btn-sm" data-filter="stream">Streaming</button>
+                <button class="btn-sm" data-filter="vision">Vision</button>
+                <button class="btn-sm" data-filter="audio">Audio</button>
+              </div>
+            </div>
+            <div style="max-height:220px; overflow-y:auto; border:1px solid var(--surface-border); border-radius:6px;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Task</th>
+                    <th>Default Model</th>
+                    <th>Dtype</th>
+                    <th>Streaming</th>
+                    <th>KV Cache</th>
+                  </tr>
+                </thead>
+                <tbody id="registryTableBody"></tbody>
+              </table>
+            </div>
           </div>
 
           <!-- HF Hub Search Tab -->
@@ -679,6 +771,13 @@
             <div style="display:flex; gap:8px;">
               <input type="text" class="input-field" id="hubSearchInput" placeholder="Search HF Hub (e.g. whisper, llama, vit)..." value="whisper" />
               <button class="btn-primary" id="hubSearchBtn">Search Hub</button>
+            </div>
+            <div style="display:flex; gap:6px; margin-top:6px; margin-bottom:6px; flex-wrap:wrap;">
+              <button class="btn-sm" onclick="hubSearch('whisper')">whisper</button>
+              <button class="btn-sm" onclick="hubSearch('llama')">llama</button>
+              <button class="btn-sm" onclick="hubSearch('qwen')">qwen</button>
+              <button class="btn-sm" onclick="hubSearch('onnx-community')">onnx-community (WebGPU)</button>
+              <button class="btn-sm" onclick="hubSearch('Xenova')">Xenova</button>
             </div>
             <div style="max-height:240px; overflow-y:auto; border:1px solid var(--surface-border); border-radius:6px;">
               <table class="data-table">
@@ -713,6 +812,29 @@
                 </thead>
                 <tbody id="cacheTableBody"></tbody>
               </table>
+            </div>
+          </div>
+
+          <!-- GPU Resilience (GPURecovery) Tab -->
+          <div class="tab-pane" id="pane-recovery">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <span style="font-size:0.75rem; color:var(--text-secondary); text-transform:uppercase;">GPURecovery State Machine</span>
+              <span id="recoveryStateBadge" class="brand-badge" style="background:#22c55e22; color:#22c55e; border-color:#22c55e; font-weight:600;">STATE: IDLE</span>
+            </div>
+            <div style="font-size:0.78rem; color:var(--text-secondary); margin-bottom:10px; line-height:1.5;">
+              WebGPU devices can be lost due to TDR resets, VRAM exhaustion, background tab suspension, or mobile OS reclamation. <code>GPURecovery</code> provides exponential backoff auto-recovery with fallback to WASM.
+            </div>
+            <div style="display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap;">
+              <button class="btn-primary" id="simLostBtn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                <span>Simulate GPU Loss</span>
+              </button>
+              <button class="btn-secondary" id="simOomBtn">Simulate VRAM OOM</button>
+              <button class="btn-secondary" id="forceWasmBtn">Switch to WASM Fallback</button>
+            </div>
+            <label style="font-size:0.75rem; color:var(--text-secondary); text-transform:uppercase;">Telemetry & Recovery Event Log</label>
+            <div class="output-box" id="recoveryLog" style="min-height:100px; max-height:160px; overflow-y:auto; font-family:var(--font-mono); font-size:0.75rem;">
+              <div style="color:var(--text-muted);">[init] GPURecovery active. Watching WebGPU device (maxRetries: 3, baseDelay: 1000ms)...</div>
             </div>
           </div>
         </div>
@@ -776,6 +898,16 @@ console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class
 <span class="syn-kw">const</span> labels <span class="syn-punc">=</span> <span class="syn-kw">await</span> <span class="syn-fn">classifier</span><span class="syn-punc">(</span>imageFileInput<span class="syn-punc">);</span>
 console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class="syn-punc">(</span>labels<span class="syn-punc">[</span><span class="syn-num">0</span><span class="syn-punc">]);</span> <span class="syn-cmt">// { label: 'tabby cat', score: 0.98 }</span>`,
 
+      detect: `<span class="syn-kw">import</span> webml <span class="syn-kw">from</span> <span class="syn-str">'webml-kit'</span><span class="syn-punc">;</span>
+
+<span class="syn-cmt">// 1. Load Object Detection pipeline</span>
+<span class="syn-kw">const</span> detector <span class="syn-punc">=</span> <span class="syn-kw">await</span> <span class="syn-fn">webml</span><span class="syn-punc">(</span><span class="syn-str">'Xenova/yolos-tiny'</span><span class="syn-punc">);</span>
+
+<span class="syn-cmt">// 2. Detect objects with bounding boxes</span>
+<span class="syn-kw">const</span> objects <span class="syn-punc">=</span> <span class="syn-kw">await</span> detector<span class="syn-punc">.</span><span class="syn-fn">detect</span><span class="syn-punc">(</span>imageElement<span class="syn-punc">,</span> <span class="syn-punc">{</span> <span class="syn-prop">threshold</span><span class="syn-punc">:</span> <span class="syn-num">0.8</span> <span class="syn-punc">});</span>
+console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class="syn-punc">(</span>objects<span class="syn-punc">);</span>
+<span class="syn-cmt">// [{ label: 'cat', score: 0.93, box: { xmin: 5, ymin: 56, xmax: 321, ymax: 469 } }]</span>`,
+
       tts: `<span class="syn-kw">import</span> webml <span class="syn-kw">from</span> <span class="syn-str">'webml-kit'</span><span class="syn-punc">;</span>
 
 <span class="syn-cmt">// 1. Load Speech Synthesis model</span>
@@ -802,6 +934,22 @@ console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class
 <span class="syn-kw">const</span> check <span class="syn-punc">=</span> <span class="syn-kw">await</span> <span class="syn-fn">canRun</span><span class="syn-punc">(</span><span class="syn-str">'4GB'</span><span class="syn-punc">);</span>
 <span class="syn-kw">if</span> <span class="syn-punc">(!</span>check<span class="syn-punc">.</span>ok<span class="syn-punc">)</span> console<span class="syn-punc">.</span><span class="syn-fn">warn</span><span class="syn-punc">(</span>check<span class="syn-punc">.</span>reason<span class="syn-punc">);</span>`,
 
+      registry: `<span class="syn-kw">import</span> <span class="syn-punc">{</span>
+  PIPELINE_REGISTRY<span class="syn-punc">,</span>
+  getPipelineDefaults<span class="syn-punc">,</span>
+  supportsStreaming<span class="syn-punc">,</span>
+  inferTask
+<span class="syn-punc">}</span> <span class="syn-kw">from</span> <span class="syn-str">'webml-kit'</span><span class="syn-punc">;</span>
+
+<span class="syn-cmt">// 1. Dynamically infer task from any model name</span>
+<span class="syn-kw">const</span> task <span class="syn-punc">=</span> <span class="syn-kw">await</span> <span class="syn-fn">inferTask</span><span class="syn-punc">(</span><span class="syn-str">'onnx-community/whisper-tiny.en'</span><span class="syn-punc">);</span>
+<span class="syn-cmt">// =&gt; 'automatic-speech-recognition'</span>
+
+<span class="syn-cmt">// 2. Inspect pipeline configuration & streaming capability</span>
+<span class="syn-kw">const</span> defaults <span class="syn-punc">=</span> <span class="syn-fn">getPipelineDefaults</span><span class="syn-punc">(</span>task<span class="syn-punc">);</span>
+<span class="syn-kw">const</span> streams <span class="syn-punc">=</span> <span class="syn-fn">supportsStreaming</span><span class="syn-punc">(</span>task<span class="syn-punc">);</span>
+console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class="syn-punc">({</span> task<span class="syn-punc">,</span> defaults<span class="syn-punc">,</span> streams <span class="syn-punc">});</span>`,
+
       hub: `<span class="syn-kw">import</span> <span class="syn-punc">{</span> searchModels<span class="syn-punc">,</span> listWebGPUModels <span class="syn-punc">}</span> <span class="syn-kw">from</span> <span class="syn-str">'webml-kit'</span><span class="syn-punc">;</span>
 
 <span class="syn-cmt">// Discover WebGPU-compatible models on Hugging Face Hub</span>
@@ -814,7 +962,27 @@ console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class
 
 <span class="syn-cmt">// Inspect client-side cache and free memory</span>
 <span class="syn-kw">const</span> cached <span class="syn-punc">=</span> <span class="syn-kw">await</span> <span class="syn-fn">listCachedModels</span><span class="syn-punc">();</span>
-<span class="syn-kw">await</span> <span class="syn-fn">clearCache</span><span class="syn-punc">(</span><span class="syn-str">'onnx-community/whisper-tiny.en'</span><span class="syn-punc">);</span>`
+<span class="syn-kw">await</span> <span class="syn-fn">clearCache</span><span class="syn-punc">(</span><span class="syn-str">'onnx-community/whisper-tiny.en'</span><span class="syn-punc">);</span>`,
+
+      recovery: `<span class="syn-kw">import</span> <span class="syn-punc">{</span> GPURecovery<span class="syn-punc">,</span> webml <span class="syn-punc">}</span> <span class="syn-kw">from</span> <span class="syn-str">'webml-kit'</span><span class="syn-punc">;</span>
+
+<span class="syn-cmt">// 1. Initialize GPU fault-tolerance handler</span>
+<span class="syn-kw">const</span> recovery <span class="syn-punc">=</span> <span class="syn-kw">new</span> <span class="syn-fn">GPURecovery</span><span class="syn-punc">({</span> <span class="syn-prop">maxRetries</span><span class="syn-punc">:</span> <span class="syn-num">3</span><span class="syn-punc">,</span> <span class="syn-prop">baseDelayMs</span><span class="syn-punc">:</span> <span class="syn-num">1000</span> <span class="syn-punc">});</span>
+
+recovery<span class="syn-punc">.</span><span class="syn-fn">on</span><span class="syn-punc">(</span><span class="syn-str">'lost'</span><span class="syn-punc">,</span> <span class="syn-punc">({</span> reason <span class="syn-punc">})</span> <span class="syn-punc">=&gt;</span> <span class="syn-punc">{</span>
+  console<span class="syn-punc">.</span><span class="syn-fn">warn</span><span class="syn-punc">(</span><span class="syn-str">\`GPU lost: \${reason}. Re-acquiring...\`</span><span class="syn-punc">);</span>
+<span class="syn-punc">});</span>
+
+recovery<span class="syn-punc">.</span><span class="syn-fn">on</span><span class="syn-punc">(</span><span class="syn-str">'recovered'</span><span class="syn-punc">,</span> <span class="syn-punc">({</span> adapter <span class="syn-punc">})</span> <span class="syn-punc">=&gt;</span> <span class="syn-punc">{</span>
+  console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class="syn-punc">(</span><span class="syn-str">'Recovered adapter:'</span><span class="syn-punc">,</span> adapter<span class="syn-punc">);</span>
+<span class="syn-punc">});</span>
+
+recovery<span class="syn-punc">.</span><span class="syn-fn">on</span><span class="syn-punc">(</span><span class="syn-str">'failed'</span><span class="syn-punc">,</span> <span class="syn-punc">()</span> <span class="syn-punc">=&gt;</span> <span class="syn-punc">{</span>
+  console<span class="syn-punc">.</span><span class="syn-fn">error</span><span class="syn-punc">(</span><span class="syn-str">'GPU unrecoverable. Fallback to WASM/CPU.'</span><span class="syn-punc">);</span>
+<span class="syn-punc">});</span>
+
+<span class="syn-cmt">// 2. Watch device</span>
+recovery<span class="syn-punc">.</span><span class="syn-fn">watchDevice</span><span class="syn-punc">(</span>gpuDevice<span class="syn-punc">);</span>`
     };
 
     const $ = (id) => document.getElementById(id);
@@ -841,11 +1009,14 @@ console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class
         asr: 'Speech Recognition (Whisper)',
         llm: 'Text Generation (LLM Streaming)',
         vision: 'Vision Transformer (ViT)',
+        detect: 'Object Detection (YOLO / DETR)',
         tts: 'Speech Synthesis (TTS)',
         embed: 'Sentence Embeddings (MiniLM)',
         vram: 'Hardware VRAM Preflight (canRun)',
+        registry: 'Pipeline Task Registry (18 Tasks)',
         hub: 'Hugging Face Hub Discovery',
-        cache: 'Cache & Storage Manager'
+        cache: 'Cache & Storage Manager',
+        recovery: 'GPU Resilience & Fault-Tolerance (GPURecovery)'
       };
       tabHeading.textContent = titles[tab] || tab;
     }
@@ -883,6 +1054,10 @@ console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class
         } else {
           gpuInfoText.textContent = `WASM SIMD Fallback`;
         }
+        if ($('specBackend')) $('specBackend').textContent = backend.toUpperCase();
+        if ($('specMaxBuffer')) $('specMaxBuffer').textContent = gpu ? gpu.vramFormatted : 'N/A';
+        if ($('specArch')) $('specArch').textContent = gpu ? (gpu.architecture || gpu.vendor) : 'WASM CPU';
+        if ($('specDtype')) $('specDtype').textContent = recommendedDtype;
         updateCacheDisplay();
       } else if (msg.type === 'progress') {
         progressBarContainer.classList.add('active');
@@ -1129,11 +1304,12 @@ console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class
       llmInput.value = '';
       llmSendBtn.disabled = true;
       llmStopBtn.disabled = false;
-      statusLabel.textContent = 'Generating...';
+      const modelId = $('llmModelSelect') ? $('llmModelSelect').value : 'HuggingFaceTB/SmolLM2-135M-Instruct';
+      statusLabel.textContent = `Loading ${modelId.split('/')[1]}...`;
 
       worker.postMessage({
         type: 'load',
-        config: { task: 'text-generation', modelId: 'onnx-community/Qwen2.5-0.5B-Instruct', dtype: 'q4' }
+        config: { task: 'text-generation', modelId, dtype: 'q4' }
       });
 
       const id = 'llm-' + Date.now();
@@ -1247,7 +1423,134 @@ console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class
       });
     });
 
-    // ─── Tab 4: TTS ───
+    // ─── Object Detection (YOLO / DETR) ───
+    const detectCanvas = $('detectCanvas');
+    const detectCtx = detectCanvas ? detectCanvas.getContext('2d') : null;
+    let detectImgUrl = 'https://huggingface.co/datasets/Xenova/transformers.js-docs/resolve/main/cats.jpg';
+    let loadedDetectImg = null;
+
+    function renderDetectImage(src) {
+      detectImgUrl = src;
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        loadedDetectImg = img;
+        if (detectCanvas && detectCtx) {
+          detectCanvas.width = img.naturalWidth || 640;
+          detectCanvas.height = img.naturalHeight || 480;
+          detectCtx.drawImage(img, 0, 0, detectCanvas.width, detectCanvas.height);
+        }
+        const resEl = $('detectResults');
+        if (resEl) resEl.innerHTML = '<div style="color:var(--text-muted);">Ready to detect objects. Click "Detect Objects".</div>';
+      };
+      img.src = src;
+    }
+
+    if (detectCanvas) {
+      renderDetectImage(detectImgUrl);
+    }
+
+    $('detectPresetCats')?.addEventListener('click', () => {
+      renderDetectImage('https://huggingface.co/datasets/Xenova/transformers.js-docs/resolve/main/cats.jpg');
+    });
+
+    $('detectPresetStreet')?.addEventListener('click', () => {
+      renderDetectImage('https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=640');
+    });
+
+    $('detectUploadBtn')?.addEventListener('click', () => $('detectFileInput')?.click());
+
+    $('detectFileInput')?.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const url = URL.createObjectURL(file);
+        renderDetectImage(url);
+      }
+    });
+
+    $('detectBtn')?.addEventListener('click', async () => {
+      const modelId = $('detectModelSelect')?.value || 'Xenova/yolos-tiny';
+      statusLabel.textContent = `Loading ${modelId.split('/')[1]}...`;
+
+      worker.postMessage({
+        type: 'load',
+        config: { task: 'object-detection', modelId, dtype: 'fp32' }
+      });
+
+      const id = 'detect-' + Date.now();
+      const onResult = (e) => {
+        if (e.data.id === id) {
+          worker.removeEventListener('message', onResult);
+          const results = e.data.data;
+          const container = $('detectResults');
+          if (container) container.innerHTML = '';
+
+          // Redraw base image
+          if (loadedDetectImg && detectCanvas && detectCtx) {
+            detectCtx.drawImage(loadedDetectImg, 0, 0, detectCanvas.width, detectCanvas.height);
+          }
+
+          if (Array.isArray(results) && results.length > 0) {
+            results.forEach((item) => {
+              const { box, label, score } = item;
+              const pct = Math.round(score * 100);
+              const x = box.xmin;
+              const y = box.ymin;
+              const w = box.xmax - box.xmin;
+              const h = box.ymax - box.ymin;
+
+              if (detectCtx) {
+                // Draw bounding box
+                detectCtx.strokeStyle = '#22c55e';
+                detectCtx.lineWidth = 3;
+                detectCtx.strokeRect(x, y, w, h);
+
+                // Draw label tag
+                detectCtx.fillStyle = '#000000';
+                const tagText = `${label} ${pct}%`;
+                detectCtx.font = 'bold 13px monospace';
+                const textWidth = detectCtx.measureText(tagText).width;
+                detectCtx.fillRect(x, Math.max(0, y - 22), textWidth + 10, 22);
+
+                detectCtx.fillStyle = '#22c55e';
+                detectCtx.fillText(tagText, x + 5, Math.max(16, y - 6));
+              }
+
+              if (container) {
+                const row = document.createElement('div');
+                row.style.display = 'flex';
+                row.style.justifyContent = 'space-between';
+                row.style.padding = '4px 8px';
+                row.style.background = 'var(--surface)';
+                row.style.border = '1px solid var(--surface-border)';
+                row.style.borderRadius = '4px';
+                row.innerHTML = `
+                  <span><strong style="color:#fff;">${label}</strong> (${pct}%)</span>
+                  <span style="color:var(--text-muted); font-size:0.72rem;">[${Math.round(x)}, ${Math.round(y)}, ${Math.round(box.xmax)}, ${Math.round(box.ymax)}]</span>
+                `;
+                container.appendChild(row);
+              }
+            });
+            statusLabel.textContent = `Detected ${results.length} objects`;
+          } else {
+            if (container) container.innerHTML = '<div style="color:var(--text-muted);">No objects detected with confidence &gt; 80%.</div>';
+            statusLabel.textContent = 'Detection complete';
+          }
+          updateCacheDisplay();
+        }
+      };
+      worker.addEventListener('message', onResult);
+
+      worker.postMessage({
+        type: 'run',
+        id,
+        task: 'object-detection',
+        input: detectImgUrl,
+        options: { threshold: 0.8 }
+      });
+    });
+
+    // ─── Tab 5: TTS ───
     $('speakBtn').addEventListener('click', async () => {
       const text = $('ttsInput').value.trim();
       if (!text) return;
@@ -1431,6 +1734,177 @@ console<span class="syn-punc">.</span><span class="syn-fn">log</span><span class
       } catch (err) {
         tbody.innerHTML = `<tr><td colspan="3" style="color:#ef4444;">Search failed: ${err.message}</td></tr>`;
       }
+    });
+
+    // ─── Tab 8: Task Registry & inferTask() ───
+    const PIPELINE_REGISTRY_DATA = {
+      'text-generation': { defaultModel: 'onnx-community/Llama-3.2-1B-Instruct-ONNX', defaultDtype: 'q4', supportsStreaming: true, usesKVCache: true, category: 'NLP' },
+      'text-classification': { defaultModel: 'Xenova/distilbert-base-uncased-finetuned-sst-2-english', defaultDtype: 'q8', supportsStreaming: false, usesKVCache: false, category: 'NLP' },
+      'image-classification': { defaultModel: 'Xenova/vit-base-patch16-224', defaultDtype: 'fp32', supportsStreaming: false, usesKVCache: false, category: 'Vision' },
+      'object-detection': { defaultModel: 'Xenova/detr-resnet-50', defaultDtype: 'fp32', supportsStreaming: false, usesKVCache: false, category: 'Vision' },
+      'automatic-speech-recognition': { defaultModel: 'onnx-community/whisper-tiny.en', defaultDtype: 'q8', supportsStreaming: false, usesKVCache: false, category: 'Audio' },
+      'text-to-speech': { defaultModel: 'Xenova/speecht5_tts', defaultDtype: 'fp32', supportsStreaming: false, usesKVCache: false, category: 'Audio' },
+      'translation': { defaultModel: 'Xenova/nllb-200-distilled-600M', defaultDtype: 'q8', supportsStreaming: false, usesKVCache: false, category: 'NLP' },
+      'summarization': { defaultModel: 'Xenova/distilbart-cnn-6-6', defaultDtype: 'q8', supportsStreaming: false, usesKVCache: false, category: 'NLP' },
+      'feature-extraction': { defaultModel: 'Xenova/all-MiniLM-L6-v2', defaultDtype: 'fp32', supportsStreaming: false, usesKVCache: false, category: 'NLP' },
+      'image-to-text': { defaultModel: 'Xenova/vit-gpt2-image-captioning', defaultDtype: 'q8', supportsStreaming: false, usesKVCache: false, category: 'Vision' },
+      'zero-shot-classification': { defaultModel: 'Xenova/mobilebert-uncased-mnli', defaultDtype: 'q8', supportsStreaming: false, usesKVCache: false, category: 'NLP' },
+      'fill-mask': { defaultModel: 'Xenova/bert-base-uncased', defaultDtype: 'q8', supportsStreaming: false, usesKVCache: false, category: 'NLP' },
+      'question-answering': { defaultModel: 'Xenova/distilbert-base-uncased-distilled-squad', defaultDtype: 'q8', supportsStreaming: false, usesKVCache: false, category: 'NLP' },
+      'token-classification': { defaultModel: 'Xenova/bert-base-NER', defaultDtype: 'q8', supportsStreaming: false, usesKVCache: false, category: 'NLP' },
+      'depth-estimation': { defaultModel: 'Xenova/depth-anything-small-hf', defaultDtype: 'fp32', supportsStreaming: false, usesKVCache: false, category: 'Vision' },
+      'image-segmentation': { defaultModel: 'Xenova/detr-resnet-50-panoptic', defaultDtype: 'fp32', supportsStreaming: false, usesKVCache: false, category: 'Vision' },
+      'raw-onnx': { defaultModel: 'custom.onnx', defaultDtype: 'fp32', supportsStreaming: false, usesKVCache: false, category: 'Custom' },
+      'custom': { defaultModel: 'custom', defaultDtype: 'fp32', supportsStreaming: false, usesKVCache: false, category: 'Custom' },
+    };
+
+    function inferTask(modelId) {
+      const lower = String(modelId).toLowerCase();
+      if (lower.includes('whisper') || lower.includes('asr') || lower.includes('speech') || lower.includes('parakeet')) return 'automatic-speech-recognition';
+      if (lower.includes('llama') || lower.includes('qwen') || lower.includes('gpt') || lower.includes('mistral') || lower.includes('phi') || lower.includes('gemma') || lower.includes('bonsai') || lower.includes('smollm')) return 'text-generation';
+      if (lower.includes('detr') || lower.includes('yolo')) return 'object-detection';
+      if (lower.includes('vit') || lower.includes('resnet') || lower.includes('mobilenet')) return 'image-classification';
+      if (lower.includes('minilm') || lower.includes('bge') || lower.includes('embed')) return 'feature-extraction';
+      if (lower.includes('speecht5') || lower.includes('mms-tts') || lower.includes('tts')) return 'text-to-speech';
+      if (lower.includes('translation') || lower.includes('nllb')) return 'translation';
+      if (lower.includes('summarization') || lower.includes('distilbart')) return 'summarization';
+      if (lower.endsWith('.onnx')) return 'raw-onnx';
+      return 'text-generation';
+    }
+
+    function renderRegistry(filter = 'all') {
+      const tbody = $('registryTableBody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      for (const [task, def] of Object.entries(PIPELINE_REGISTRY_DATA)) {
+        if (filter === 'stream' && !def.supportsStreaming) continue;
+        if (filter === 'vision' && def.category !== 'Vision') continue;
+        if (filter === 'audio' && def.category !== 'Audio') continue;
+
+        const tr = document.createElement('tr');
+        tr.style.cursor = 'pointer';
+        tr.innerHTML = `
+          <td style="color:#fff; font-weight:500;">${task}</td>
+          <td style="color:var(--text-muted);">${def.defaultModel || 'N/A'}</td>
+          <td><span class="brand-badge">${def.defaultDtype}</span></td>
+          <td>${def.supportsStreaming ? '<span style="color:#22c55e;">Yes</span>' : '<span style="color:var(--text-muted);">No</span>'}</td>
+          <td>${def.usesKVCache ? '<span style="color:#22c55e;">Yes</span>' : '<span style="color:var(--text-muted);">No</span>'}</td>
+        `;
+        tr.addEventListener('click', () => {
+          tabHeading.textContent = `Registry: ${task}`;
+          codeSnippet.innerHTML = `<span class="syn-kw">import</span> webml<span class="syn-punc">,</span> <span class="syn-punc">{</span> getPipelineDefaults <span class="syn-punc">}</span> <span class="syn-kw">from</span> <span class="syn-str">'webml-kit'</span><span class="syn-punc">;</span>
+
+<span class="syn-cmt">// Task defaults for '${task}'</span>
+<span class="syn-kw">const</span> config <span class="syn-punc">=</span> <span class="syn-fn">getPipelineDefaults</span><span class="syn-punc">(</span><span class="syn-str">'${task}'</span><span class="syn-punc">);</span>
+<span class="syn-cmt">// ${JSON.stringify(def, null, 2).split('\n').join('\n// ')}</span>
+
+<span class="syn-kw">const</span> model <span class="syn-punc">=</span> <span class="syn-kw">await</span> <span class="syn-fn">webml</span><span class="syn-punc">(</span><span class="syn-str">'${def.defaultModel}'</span><span class="syn-punc">);</span>`;
+        });
+        tbody.appendChild(tr);
+      }
+    }
+
+    renderRegistry();
+
+    document.querySelectorAll('#registryFilterChips button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#registryFilterChips button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderRegistry(btn.dataset.filter);
+      });
+    });
+
+    function updateInferTask() {
+      const val = $('inferTaskInput') ? $('inferTaskInput').value.trim() : '';
+      const task = inferTask(val);
+      const badge = $('inferTaskBadge');
+      if (badge) badge.textContent = task;
+    }
+
+    window.testInfer = (id) => {
+      const input = $('inferTaskInput');
+      if (input) {
+        input.value = id;
+        updateInferTask();
+      }
+    };
+
+    $('inferTaskInput')?.addEventListener('input', updateInferTask);
+
+    window.hubSearch = (query) => {
+      const input = $('hubSearchInput');
+      if (input) {
+        input.value = query;
+        $('hubSearchBtn')?.click();
+      }
+    };
+
+    // ─── Tab 11: GPU Recovery & Fault-Tolerance ───
+    const recoveryLog = $('recoveryLog');
+    const recoveryBadge = $('recoveryStateBadge');
+
+    function logRecovery(msg, level = 'info') {
+      if (!recoveryLog) return;
+      const time = new Date().toLocaleTimeString();
+      const color = level === 'warn' ? '#eab308' : level === 'error' ? '#ef4444' : level === 'success' ? '#22c55e' : 'var(--text-secondary)';
+      const el = document.createElement('div');
+      el.style.color = color;
+      el.style.marginTop = '2px';
+      el.innerHTML = `<span style="color:var(--text-muted); font-size:0.7rem;">[${time}]</span> ${msg}`;
+      recoveryLog.appendChild(el);
+      recoveryLog.scrollTop = recoveryLog.scrollHeight;
+    }
+
+    function setRecoveryState(state) {
+      if (!recoveryBadge) return;
+      const colors = {
+        idle: '#22c55e',
+        lost: '#ef4444',
+        recovering: '#eab308',
+        recovered: '#22c55e',
+        failed: '#38bdf8'
+      };
+      recoveryBadge.textContent = `STATE: ${state.toUpperCase()}`;
+      recoveryBadge.style.color = colors[state] || '#fff';
+      recoveryBadge.style.borderColor = colors[state] || '#fff';
+      recoveryBadge.style.background = `${colors[state] || '#fff'}22`;
+    }
+
+    $('simLostBtn')?.addEventListener('click', async () => {
+      setRecoveryState('lost');
+      logRecovery('Event "lost": GPU device lost (reason: "Device reset by system driver / TDR reset")', 'error');
+
+      setRecoveryState('recovering');
+      logRecovery('Attempting recovery (attempt 1/3, exponential backoff: 1000ms)...', 'warn');
+      await new Promise(r => setTimeout(r, 800));
+
+      setRecoveryState('recovered');
+      logRecovery('Event "recovered": Successfully re-acquired GPUAdapter (Apple Silicon / WebGPU). Rebuilding pipeline caches.', 'success');
+      setTimeout(() => setRecoveryState('idle'), 2500);
+    });
+
+    $('simOomBtn')?.addEventListener('click', async () => {
+      setRecoveryState('lost');
+      logRecovery('Event "lost": GPU VRAM Out of Memory (allocated > maxBufferSize). Device destroyed.', 'error');
+
+      setRecoveryState('recovering');
+      logRecovery('Attempting recovery (attempt 1/3, delay 1000ms)...', 'warn');
+      await new Promise(r => setTimeout(r, 800));
+      logRecovery('Attempt 1 failed: VRAM still constrained. Retrying attempt 2/3 (delay 2000ms)...', 'warn');
+      await new Promise(r => setTimeout(r, 800));
+
+      setRecoveryState('failed');
+      logRecovery('Event "failed": Max retries exceeded. Automatic failover triggered -> Switched to WASM SIMD CPU backend.', 'success');
+      backendText.textContent = 'WASM';
+      gpuInfoText.textContent = 'CPU Fallback (SIMD)';
+    });
+
+    $('forceWasmBtn')?.addEventListener('click', () => {
+      setRecoveryState('failed');
+      logRecovery('Manual override: Disabled WebGPU device, forced WebAssembly backend for all pipelines.', 'info');
+      backendText.textContent = 'WASM';
+      gpuInfoText.textContent = 'CPU Fallback (SIMD)';
     });
   </script>
 </body>

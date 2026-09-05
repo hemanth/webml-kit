@@ -8,6 +8,7 @@ import {
   env,
   TextStreamer,
   InterruptableStoppingCriteria,
+  RawImage,
 } from 'https://esm.sh/@huggingface/transformers@4.1.0';
 
 // Configure transformers environment
@@ -91,7 +92,7 @@ async function loadPipeline(config) {
   if (!instances.has(key)) {
     const promise = (async () => {
       const pipe = await pipeline(config.task, config.modelId, {
-        dtype: config.dtype ?? 'q4',
+        dtype: config.dtype ?? (config.task === 'text-generation' ? 'q4' : 'fp32'),
         device: config.device ?? 'webgpu',
         progress_callback: onProgress,
       });
@@ -226,6 +227,17 @@ async function runInference(id, task, input, options = {}) {
 
   try {
     const pipe = await pipePromise;
+    let procInput = input;
+
+    if (typeof input === 'string' && input.startsWith('data:')) {
+      try {
+        const res = await fetch(input);
+        const blob = await res.blob();
+        procInput = await RawImage.fromBlob(blob);
+      } catch (imgErr) {
+        console.warn('RawImage conversion fallback:', imgErr);
+      }
+    }
 
     if (task === 'text-generation') {
       await runTextGeneration(id, pipe, input, options);
@@ -256,7 +268,7 @@ async function runInference(id, task, input, options = {}) {
         throw new Error('Text-to-speech model did not return an audio waveform');
       }
     } else {
-      const result = await pipe(input, options);
+      const result = await pipe(procInput, options);
       self.postMessage({ type: 'result', id, data: result });
     }
   } catch (err) {
