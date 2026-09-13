@@ -10,6 +10,10 @@
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
     },
+    "./browser": {
+      "import": "./dist/webml-kit.browser.js",
+      "types": "./dist/index.d.ts"
+    },
     "./worker": {
       "import": "./dist/model-worker.js",
       "types": "./dist/model-worker.d.ts"
@@ -21,7 +25,8 @@
     "logo.png"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && npm run build:browser",
+    "build:browser": "esbuild src/index.ts --bundle --format=esm --platform=browser --external:'node:*' --external:onnxruntime-web --external:@huggingface/transformers --external:kokoro-js --outfile=dist/webml-kit.browser.js",
     "dev": "tsc --watch",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -53,6 +58,7 @@
   },
   "devDependencies": {
     "@webgpu/types": "^0.1.69",
+    "esbuild": "^0.28.2",
     "playwright": "^1.63.0",
     "typescript": "^5.7.0",
     "vitest": "^4.1.4"

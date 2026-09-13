@@ -157,4 +157,50 @@ describe('Local Su-śrotā ONNX ASR Inference', () => {
     },
     15000,
   );
+
+  it('detects and clears cached models using isCached and clearCache', async () => {
+    const { isCached, clearCache } = await import('../src/cache.js');
+    // Mock caches
+    const mockStorage = new Map<string, Response>();
+    const mockCache = {
+      match: async (req: string | Request) => {
+        const url = typeof req === 'string' ? req : req.url;
+        return mockStorage.get(url) || null;
+      },
+      put: async (req: string | Request, res: Response) => {
+        const url = typeof req === 'string' ? req : req.url;
+        mockStorage.set(url, res);
+      },
+      delete: async (req: string | Request) => {
+        const url = typeof req === 'string' ? req : req.url;
+        return mockStorage.delete(url);
+      },
+      keys: async () => Array.from(mockStorage.keys()).map(url => ({ url })),
+    };
+
+    (globalThis as any).caches = {
+      keys: async () => ['webml-kit-onnx-cache'],
+      open: async (name: string) => mockCache,
+      delete: async (name: string) => {
+        mockStorage.clear();
+        return true;
+      },
+    };
+
+    expect(await isCached('sushrota-model')).toBe(false);
+
+    // Put a mock entry
+    await mockCache.put(
+      'https://huggingface.co/gnumanth/sushrota-sanskrit-asr-onnx/resolve/main/sushrota_sanskrit_ctc_int8.onnx',
+      new Response(new Uint8Array(100)),
+    );
+
+    expect(await isCached('sushrota-sanskrit-asr-onnx')).toBe(true);
+    expect(await isCached('sushrota_sanskrit_ctc_int8')).toBe(true);
+
+    await clearCache('sushrota-sanskrit-asr-onnx');
+    expect(await isCached('sushrota-sanskrit-asr-onnx')).toBe(false);
+
+    delete (globalThis as any).caches;
+  });
 });

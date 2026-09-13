@@ -9,10 +9,18 @@
 import * as ort from 'onnxruntime-web';
 import type { ModelConfig, ProgressCallback } from './types.js';
 
+// Resolve ONNX Runtime instance: prefer globalThis.ort (e.g. from script tag in browser) or imported module
+const runtimeOrt: typeof ort =
+  typeof globalThis !== 'undefined' && (globalThis as any).ort
+    ? (globalThis as any).ort
+    : ort;
+
 // Configure ONNX Runtime WebAssembly environment
-ort.env.wasm.simd = true;
-if (typeof navigator !== 'undefined' && navigator.hardwareConcurrency) {
-  ort.env.wasm.numThreads = Math.min(navigator.hardwareConcurrency, 4);
+if (runtimeOrt?.env?.wasm) {
+  runtimeOrt.env.wasm.simd = true;
+  if (typeof navigator !== 'undefined' && navigator.hardwareConcurrency) {
+    runtimeOrt.env.wasm.numThreads = Math.min(navigator.hardwareConcurrency, 4);
+  }
 }
 
 export interface OnnxPipelineInstance {
@@ -48,10 +56,14 @@ function resolveAssetUrl(modelId: string, filename: string, revision = 'main'): 
   return `${HF_BASE}/${modelId}/resolve/${revision}/${filename}`;
 }
 
+const DEFAULT_ONNX_CACHE_NAME = 'webml-kit-onnx-cache';
+
 async function downloadAsset(
   url: string,
   fileName: string,
   onProgress?: ProgressCallback,
+  useCache = true,
+  cacheName = DEFAULT_ONNX_CACHE_NAME,
 ): Promise<ArrayBuffer> {
   if (
     typeof process !== 'undefined' &&
@@ -72,6 +84,28 @@ async function downloadAsset(
     return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
   }
 
+  // Check persistent browser Cache API
+  let cache: Cache | null = null;
+  if (useCache && typeof caches !== 'undefined') {
+    try {
+      cache = await caches.open(cacheName);
+      const cached = await cache.match(url);
+      if (cached) {
+        const buf = await cached.arrayBuffer();
+        onProgress?.({
+          status: 'ready',
+          file: fileName,
+          loaded: buf.byteLength,
+          total: buf.byteLength,
+          percent: 100,
+        });
+        return buf;
+      }
+    } catch (err) {
+      console.warn('Cache API lookup failed, fetching over network:', err);
+    }
+  }
+
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Failed to fetch ${fileName} from ${url}: ${response.status} ${response.statusText}`);
@@ -82,6 +116,18 @@ async function downloadAsset(
 
   if (!response.body || total === 0) {
     const buffer = await response.arrayBuffer();
+    if (cache) {
+      try {
+        await cache.put(url, new Response(buffer.slice(0), {
+          headers: {
+            'Content-Type': 'application/octet-stream',
+            'Content-Length': String(buffer.byteLength),
+          },
+        }));
+      } catch (err) {
+        console.warn('Failed to cache asset in Cache API:', err);
+      }
+    }
     onProgress?.({
       status: 'downloading',
       file: fileName,
@@ -120,6 +166,19 @@ async function downloadAsset(
     offset += chunk.length;
   }
 
+  if (cache) {
+    try {
+      await cache.put(url, new Response(merged.buffer.slice(0), {
+        headers: {
+          'Content-Type': 'application/octet-stream',
+          'Content-Length': String(loaded),
+        },
+      }));
+    } catch (err) {
+      console.warn('Failed to cache asset in Cache API:', err);
+    }
+  }
+
   return merged.buffer;
 }
 
@@ -135,7 +194,7 @@ async function createSession(
 
   if (preferredBackend === 'webgpu') {
     try {
-      const session = await ort.InferenceSession.create(model as any, {
+      const session = await runtimeOrt.InferenceSession.create(model as any, {
         executionProviders: ['webgpu'],
       });
       return { session, backend: 'webgpu' };
@@ -144,7 +203,7 @@ async function createSession(
     }
   }
 
-  const session = await ort.InferenceSession.create(model as any, {
+  const session = await runtimeOrt.InferenceSession.create(model as any, {
     executionProviders: ['wasm'],
   });
   return { session, backend: 'wasm' };
@@ -287,6 +346,8 @@ export async function createOnnxPipeline(
 ): Promise<OnnxPipelineInstance> {
   const preferredDevice = config.device ?? 'webgpu';
   const revision = config.revision ?? 'main';
+  const useCache = config.cache !== false;
+  const cacheName = config.cacheName || DEFAULT_ONNX_CACHE_NAME;
 
   // 1. Discover model files
   let modelFile = config.modelFile;
@@ -315,13 +376,13 @@ export async function createOnnxPipeline(
   }
 
   const modelUrl = resolveAssetUrl(config.modelId, modelFile, revision);
-  const modelBuffer = await downloadAsset(modelUrl, modelFile, onProgress);
+  const modelBuffer = await downloadAsset(modelUrl, modelFile, onProgress, useCache, cacheName);
 
   // Preprocessor (optional companion model for ASR/audio)
   let prepSession: ort.InferenceSession | null = null;
   if (preprocessorFile) {
     const prepUrl = resolveAssetUrl(config.modelId, preprocessorFile, revision);
-    const prepBuffer = await downloadAsset(prepUrl, preprocessorFile, onProgress);
+    const prepBuffer = await downloadAsset(prepUrl, preprocessorFile, onProgress, useCache, cacheName);
     const { session } = await createSession(prepBuffer, preferredDevice);
     prepSession = session;
   }
@@ -342,9 +403,26 @@ export async function createOnnxPipeline(
         const text = await fs.readFile(path, 'utf-8');
         vocab = JSON.parse(text);
       } else {
-        const res = await fetch(vocabUrl);
-        if (res.ok) {
-          vocab = await res.json();
+        let cachedRes: Response | null = null;
+        if (useCache && typeof caches !== 'undefined') {
+          try {
+            const cache = await caches.open(cacheName);
+            cachedRes = (await cache.match(vocabUrl)) ?? null;
+          } catch {}
+        }
+        if (cachedRes) {
+          vocab = await cachedRes.json();
+        } else {
+          const res = await fetch(vocabUrl);
+          if (res.ok) {
+            if (useCache && typeof caches !== 'undefined') {
+              try {
+                const cache = await caches.open(cacheName);
+                await cache.put(vocabUrl, res.clone());
+              } catch {}
+            }
+            vocab = await res.json();
+          }
         }
       }
     } catch {
@@ -366,8 +444,8 @@ export async function createOnnxPipeline(
 
         if (prepSession) {
           // Mel filterbank extraction
-          const audioTensor = new ort.Tensor('float32', pcm, [1, pcm.length]);
-          const lengthTensor = new ort.Tensor('int64', BigInt64Array.from([BigInt(pcm.length)]), [1]);
+          const audioTensor = new runtimeOrt.Tensor('float32', pcm, [1, pcm.length]);
+          const lengthTensor = new runtimeOrt.Tensor('int64', BigInt64Array.from([BigInt(pcm.length)]), [1]);
           const prepOutputs = await prepSession.run({
             audio_signal: audioTensor,
             length: lengthTensor,
@@ -377,8 +455,8 @@ export async function createOnnxPipeline(
           acousticLength = (prepOutputs.processed_length ?? Object.values(prepOutputs)[1]) as ort.Tensor;
         } else {
           // Pass raw audio directly
-          acousticSignal = new ort.Tensor('float32', pcm, [1, pcm.length]);
-          acousticLength = new ort.Tensor('int64', BigInt64Array.from([BigInt(pcm.length)]), [1]);
+          acousticSignal = new runtimeOrt.Tensor('float32', pcm, [1, pcm.length]);
+          acousticLength = new runtimeOrt.Tensor('int64', BigInt64Array.from([BigInt(pcm.length)]), [1]);
         }
 
         // Acoustic model inference
@@ -433,17 +511,17 @@ export async function createOnnxPipeline(
     const feeds: Record<string, ort.Tensor> = {};
     if (typeof input === 'object' && input !== null) {
       for (const [k, v] of Object.entries(input as Record<string, unknown>)) {
-        if (v instanceof ort.Tensor) {
+        if (v instanceof (runtimeOrt.Tensor ?? ort.Tensor)) {
           feeds[k] = v;
         } else if (v instanceof Float32Array) {
-          feeds[k] = new ort.Tensor('float32', v, [1, v.length]);
+          feeds[k] = new runtimeOrt.Tensor('float32', v, [1, v.length]);
         }
       }
     }
     const outputs = await modelSession.run(feeds);
     const result: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(outputs)) {
-      result[k] = v.data;
+      result[k] = (v as any).data;
     }
     return result;
   };

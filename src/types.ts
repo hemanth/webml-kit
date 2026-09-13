@@ -74,12 +74,16 @@ export interface ModelConfig {
   vocabFile?: string;
   /** Custom execution providers override, e.g. ['wasm'] or ['webgpu', 'wasm'] */
   executionProviders?: string[];
+  /** Enable persistent browser Cache API storage for downloaded ONNX models (defaults to true) */
+  cache?: boolean;
+  /** Custom cache name (defaults to 'webml-kit-onnx-cache') */
+  cacheName?: string;
 }
 
 // ─── Progress ───
 
 export interface ProgressEvent {
-  status: 'downloading' | 'loading' | 'compiling' | 'warming';
+  status: 'downloading' | 'loading' | 'compiling' | 'warming' | 'ready';
   /** File being downloaded */
   file?: string;
   /** Bytes loaded so far */

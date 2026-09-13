@@ -9,8 +9,12 @@
 import type { CachedModel, CacheBackend } from './types.js';
 import { formatSize } from './device.js';
 
-/** HuggingFace Transformers.js cache name prefix */
-const HF_CACHE_PREFIX = 'transformers-cache';
+/** Supported model cache name prefixes */
+const CACHE_PREFIXES = ['transformers-cache', 'webml-kit'];
+
+function isModelCache(name: string): boolean {
+  return CACHE_PREFIXES.some(prefix => name.startsWith(prefix));
+}
 
 /**
  * Detect which cache backend is available.
@@ -51,9 +55,9 @@ export async function isCached(modelId: string): Promise<boolean> {
 
   try {
     const keys = await caches.keys();
-    const hfCaches = keys.filter(k => k.startsWith(HF_CACHE_PREFIX));
+    const matchedCaches = keys.filter(k => isModelCache(k));
 
-    for (const cacheName of hfCaches) {
+    for (const cacheName of matchedCaches) {
       const cache = await caches.open(cacheName);
       const cacheKeys = await cache.keys();
       const hasModel = cacheKeys.some(req =>
@@ -92,9 +96,9 @@ export async function listCachedModels(): Promise<CachedModel[]> {
 
   try {
     const keys = await caches.keys();
-    const hfCaches = keys.filter(k => k.startsWith(HF_CACHE_PREFIX));
+    const matchedCaches = keys.filter(k => isModelCache(k));
 
-    for (const cacheName of hfCaches) {
+    for (const cacheName of matchedCaches) {
       const cache = await caches.open(cacheName);
       const cacheKeys = await cache.keys();
 
@@ -105,14 +109,12 @@ export async function listCachedModels(): Promise<CachedModel[]> {
         const url = request.url;
         // HF URLs: https://huggingface.co/{org}/{model}/resolve/{rev}/{file}
         const match = url.match(/huggingface\.co\/([^/]+\/[^/]+)\//);
-        if (match) {
-          const id = match[1];
-          const response = await cache.match(request);
-          const size = response
-            ? Number(response.headers.get('content-length') ?? 0)
-            : 0;
-          modelUrls.set(id, (modelUrls.get(id) ?? 0) + size);
-        }
+        const id = match ? match[1] : (url.split('/').filter(Boolean).slice(-2).join('/') || url);
+        const response = await cache.match(request);
+        const size = response
+          ? Number(response.headers.get('content-length') ?? 0)
+          : 0;
+        modelUrls.set(id, (modelUrls.get(id) ?? 0) + size);
       }
 
       for (const [modelId, sizeBytes] of modelUrls) {
@@ -149,9 +151,9 @@ export async function clearCache(modelId?: string): Promise<void> {
 
   try {
     const keys = await caches.keys();
-    const hfCaches = keys.filter(k => k.startsWith(HF_CACHE_PREFIX));
+    const matchedCaches = keys.filter(k => isModelCache(k));
 
-    for (const cacheName of hfCaches) {
+    for (const cacheName of matchedCaches) {
       if (!modelId) {
         // Clear entire cache
         await caches.delete(cacheName);
