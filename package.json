@@ -26,7 +26,7 @@
   ],
   "scripts": {
     "build": "tsc && npm run build:browser",
-    "build:browser": "esbuild src/index.ts --bundle --format=esm --platform=browser --external:'node:*' --external:onnxruntime-web --external:@huggingface/transformers --external:kokoro-js --outfile=dist/webml-kit.browser.js",
+    "build:browser": "esbuild src/index.ts --bundle --format=esm --platform=browser --alias:onnxruntime-web=./src/shim-ort.ts --external:'node:*' --external:@huggingface/transformers --external:kokoro-js --outfile=dist/webml-kit.browser.js",
     "dev": "tsc --watch",
     "test": "vitest run",
     "test:watch": "vitest",
