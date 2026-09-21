@@ -35,10 +35,10 @@ export const OPENJEV_MODELS: Record<string, OpenJevModelInfo> = {
   },
   'qwen3-0.6b': {
     id: 'qwen3-0.6b',
-    name: 'Qwen 3 0.6B (OpenJev)',
-    url: 'https://huggingface.co/openjev/Qwen3-0.6B-GGUF/resolve/main/qwen3-0.6b-q4_k_m.gguf',
+    name: 'Qwen 2.5 0.5B (OpenJev)',
+    url: 'https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q4_k_m.gguf',
     family: 'qwen',
-    sizeMB: 480,
+    sizeMB: 490,
   },
   'qwen3.5-4b': {
     id: 'qwen3.5-4b',
@@ -708,9 +708,9 @@ export class OpenJevWllamaEngine implements DecisionEngine {
     }
 
     const pathConfig = this.options.wasmPaths || {
-      default: 'https://cdn.jsdelivr.net/npm/@wllama/wllama@3.6.1/esm/wllama.wasm',
-      'single-thread/wllama.wasm': 'https://cdn.jsdelivr.net/npm/@wllama/wllama@3.6.1/esm/single-thread/wllama.wasm',
-      'multi-thread/wllama.wasm': 'https://cdn.jsdelivr.net/npm/@wllama/wllama@3.6.1/esm/multi-thread/wllama.wasm',
+      default: 'https://cdn.jsdelivr.net/npm/@wllama/wllama@3.6.1/esm/wasm/wllama.wasm',
+      'single-thread/wllama.wasm': 'https://cdn.jsdelivr.net/npm/@wllama/wllama@3.6.1/esm/wasm/wllama.wasm',
+      'multi-thread/wllama.wasm': 'https://cdn.jsdelivr.net/npm/@wllama/wllama@3.6.1/esm/wasm/wllama.wasm',
     };
 
     this.wllamaInstance = new WllamaClass(pathConfig, {
