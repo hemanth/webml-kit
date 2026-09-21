@@ -110,6 +110,32 @@ export {
 } from './hub.js';
 export type { HubModel, SearchOptions } from './hub.js';
 
+// ─── Jev System One / OpenJev Decision Capabilities ───
+export {
+  createDecisionEngine,
+  directChoice,
+  OPENJEV_MODELS,
+  HeuristicDecisionEngine,
+  OpenJevWllamaEngine,
+  normalizeOptions,
+  normalizeCriteria,
+  validateModelOptions,
+} from './decision.js';
+export type {
+  DecisionEngine,
+  DecisionEngineOptions,
+  ChoiceInput,
+  ChoiceResult,
+  NoulInput,
+  NoulResult,
+  ScoreInput,
+  ScoreResult,
+  OpenJevModelPreset,
+  OpenJevModelInfo,
+  DecisionProgressEvent,
+  DecisionProgressCallback,
+} from './decision.js';
+
 // ─── Types ───
 export type {
   DeviceBackend,

@@ -1,6 +1,6 @@
 {
   "name": "webml-kit",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Framework-agnostic utilities for loading and running ML models in the browser via WebGPU/WASM",
   "type": "module",
   "main": "./dist/index.js",
@@ -26,7 +26,7 @@
   ],
   "scripts": {
     "build": "tsc && npm run build:browser",
-    "build:browser": "esbuild src/index.ts --bundle --format=esm --platform=browser --alias:onnxruntime-web=./src/shim-ort.ts --external:'node:*' --external:@huggingface/transformers --external:kokoro-js --outfile=dist/webml-kit.browser.js",
+    "build:browser": "esbuild src/index.ts --bundle --format=esm --platform=browser --alias:onnxruntime-web=./src/shim-ort.ts --external:'node:*' --external:@huggingface/transformers --external:kokoro-js --external:@wllama/wllama --external:'@wllama/*' --outfile=dist/webml-kit.browser.js",
     "dev": "tsc --watch",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -49,7 +49,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/hemanth/webml-kit.git"
+    "url": "git+https://github.com/hemanth/webml-kit.git"
   },
   "dependencies": {
     "@huggingface/transformers": "^4.1.0",
@@ -62,5 +62,8 @@
     "playwright": "^1.63.0",
     "typescript": "^5.7.0",
     "vitest": "^4.1.4"
+  },
+  "optionalDependencies": {
+    "@wllama/wllama": "^3.6.1"
   }
 }

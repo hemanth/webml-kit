@@ -186,6 +186,43 @@ const asr = await webml('onnx-community/whisper-tiny.en'); // or any standalone 
 const { text } = await asr.transcribe(audioFloat32Array);
 ```
 
+### Jev System One / OpenJev Decision Capabilities
+
+Fast, calibrated, programmable decisions without autoregressive token generation. Turn natural language and application state into typed choices, binary verdicts (`noul`), or continuous level scores (`score`) with direct logit readouts:
+
+```ts
+import webml, { createDecisionEngine, directChoice } from 'webml-kit';
+
+// One-shot direct choice
+const result = await directChoice({
+  state: 'Customer reports: "My subscription charged twice, please refund immediately."',
+  question: 'Which department should handle this request?',
+  options: ['billing', 'technical-support', 'sales'],
+});
+console.log(result.choice);        // 'billing'
+console.log(result.confidence);    // 0.88
+console.log(result.probabilities); // { billing: 0.88, 'technical-support': 0.08, sales: 0.04 }
+
+// Binary evaluation (Noul)
+const engine = webml.decision({ model: 'qwen3-0.6b' });
+const { noul, passed } = await engine.noul({
+  state: 'Production database cluster is reporting 500 errors',
+  statement: 'Is there an urgent incident?',
+});
+console.log(noul);   // 0.94
+console.log(passed); // true
+
+// Continuous scoring along ordered criteria levels
+const { score, confidence } = await engine.score({
+  state: 'There is a minor typo in the footer disclaimer.',
+  instructions: 'Rate issue severity',
+  criteria: ['P3', 'P2', 'P1', 'P0'],
+});
+console.log(score); // 0.15 (continuous score on 0-3 scale)
+```
+
+Supports OpenJev GGUF models (`minicpm5-2b`, `qwen3-0.6b`, `qwen3.5-4b`) via `@wllama/wllama` with WebGPU/WASM in browser and worker environments, with automatic, zero-dependency heuristic fallback for Node.js, offline, or test environments.
+
 ## API
 
 ### ModelClient

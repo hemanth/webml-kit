@@ -40,6 +40,19 @@ import type {
   ProgressCallback,
 } from './types.js';
 import { TokenStream } from './streaming.js';
+import {
+  createDecisionEngine,
+  directChoice,
+  type DecisionEngine,
+  type DecisionEngineOptions,
+  type ChoiceInput,
+  type ChoiceResult,
+  type NoulInput,
+  type NoulResult,
+  type ScoreInput,
+  type ScoreResult,
+  type OpenJevModelPreset,
+} from './decision.js';
 
 export interface WebMLOptions {
   /** Override pipeline task (auto-detected from HF metadata if omitted) */
@@ -85,6 +98,15 @@ export interface LoadedModel {
   /** Detect objects in image */
   detect(input: unknown, options?: Record<string, unknown>): Promise<DetectionResult[]>;
 
+  /** Direct choice evaluation (for decision models) */
+  choice?(input: ChoiceInput): Promise<ChoiceResult>;
+  /** Direct choice evaluation alias (for decision models) */
+  directChoice?(input: ChoiceInput): Promise<ChoiceResult>;
+  /** Direct binary evaluation (for decision models) */
+  noul?(input: NoulInput): Promise<NoulResult>;
+  /** Continuous scoring evaluation (for decision models) */
+  score?(input: ScoreInput): Promise<ScoreResult>;
+
   /** Listen to live microphone audio in browser and transcribe on the fly */
   listen(options: { onTranscript: (text: string) => void; intervalSeconds?: number }): Promise<MicListener>;
 }
@@ -96,6 +118,16 @@ export async function inferTask(modelId: string): Promise<PipelineTask> {
   const lower = modelId.toLowerCase();
 
   // Fast heuristic matching
+  if (
+    lower.includes('openjev') ||
+    lower.includes('jev') ||
+    lower.includes('decision') ||
+    lower === 'minicpm5-2b' ||
+    lower === 'qwen3-0.6b' ||
+    lower === 'qwen3.5-4b'
+  ) {
+    return 'decision';
+  }
   if (
     lower.includes('kokoro') ||
     lower.includes('speecht5') ||
@@ -167,11 +199,87 @@ export async function inferTask(modelId: string): Promise<PipelineTask> {
  * @param options - Configuration options
  * @returns Ready-to-use callable model instance
  */
-export async function webml(
+async function webmlImpl(
   modelId: string,
   options: WebMLOptions = {},
 ): Promise<LoadedModel> {
   const task = options.task ?? (await inferTask(modelId));
+
+  if (task === 'decision') {
+    const engine = createDecisionEngine({
+      model: modelId as OpenJevModelPreset,
+      onProgress: options.onProgress
+        ? (e) =>
+            options.onProgress?.({
+              status: e.status,
+              loaded: e.loaded,
+              total: e.total,
+              percent: e.percent,
+              file: e.detail,
+            })
+        : undefined,
+    });
+    await engine.init();
+
+    const runner = async (input: unknown, runOptions?: Record<string, unknown>) => {
+      if (typeof input === 'object' && input !== null && 'options' in input) {
+        return engine.choice(input as ChoiceInput);
+      }
+      if (typeof input === 'object' && input !== null && 'statement' in input) {
+        return engine.noul(input as NoulInput);
+      }
+      if (typeof input === 'object' && input !== null && 'criteria' in input) {
+        return engine.score(input as ScoreInput);
+      }
+      return engine.choice({
+        state: input,
+        options: (runOptions?.options as any) || ['yes', 'no'],
+      });
+    };
+
+    const model = Object.assign(runner, {
+      task,
+      modelId,
+      client: null as any,
+
+      run: async <T = unknown>(input: unknown, runOptions?: Record<string, unknown>): Promise<T> => {
+        return runner(input, runOptions) as Promise<T>;
+      },
+
+      dispose: () => {
+        engine.dispose();
+      },
+
+      choice: (choiceInput: ChoiceInput) => engine.choice(choiceInput),
+      directChoice: (choiceInput: ChoiceInput) => engine.directChoice(choiceInput),
+      noul: (noulInput: NoulInput) => engine.noul(noulInput),
+      score: (scoreInput: ScoreInput) => engine.score(scoreInput),
+
+      stream: () => {
+        throw new Error('Streaming is not supported for decision models');
+      },
+      generate: async () => {
+        throw new Error('generate is not supported for decision models; use choice() or score()');
+      },
+      transcribe: async () => {
+        throw new Error('transcribe is not supported for decision models');
+      },
+      classify: async () => {
+        throw new Error('Use choice() or score() for decision models');
+      },
+      embed: async () => {
+        throw new Error('embed is not supported for decision models');
+      },
+      detect: async () => {
+        throw new Error('detect is not supported for decision models');
+      },
+      listen: async () => {
+        throw new Error('listen is not supported for decision models');
+      },
+    });
+
+    return model as unknown as LoadedModel;
+  }
 
   const client = new ModelClient(options.workerUrl);
   await client.load({
@@ -249,5 +357,17 @@ export async function webml(
 
   return model as unknown as LoadedModel;
 }
+
+export const webml = Object.assign(webmlImpl, {
+  decision: (options?: DecisionEngineOptions): DecisionEngine => {
+    return createDecisionEngine(options);
+  },
+  directChoice: (
+    input: ChoiceInput,
+    options?: DecisionEngineOptions,
+  ): Promise<ChoiceResult> => {
+    return directChoice(input, options);
+  },
+});
 
 export default webml;

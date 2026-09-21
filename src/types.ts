@@ -51,6 +51,7 @@ export type PipelineTask =
   | 'depth-estimation'
   | 'image-segmentation'
   | 'raw-onnx'
+  | 'decision'
   | 'custom';
 
 // ─── Model Configuration ───

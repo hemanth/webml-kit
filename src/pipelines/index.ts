@@ -122,6 +122,12 @@ export const PIPELINE_REGISTRY: Record<PipelineTask, PipelineDefaults> = {
     supportsStreaming: false,
     usesKVCache: false,
   },
+  'decision': {
+    defaultModel: 'qwen3-0.6b',
+    defaultDtype: 'q4',
+    supportsStreaming: false,
+    usesKVCache: false,
+  },
   'custom': {
     defaultModel: '',
     defaultDtype: 'fp32',
