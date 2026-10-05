@@ -107,6 +107,13 @@ export interface LoadedModel {
   /** Continuous scoring evaluation (for decision models) */
   score?(input: ScoreInput): Promise<ScoreResult>;
 
+  /** Synthesize speech from text (for text-to-speech models) */
+  speak?(input: string, options?: Record<string, unknown>): Promise<unknown>;
+  /** Synthesize Sanskrit śloka chant (for Vāgdhenu / sanskrit-tts-web) */
+  chant?(input: string, options?: Record<string, unknown>): Promise<unknown>;
+  /** Run Pāṇinian Guru/Laghu scansion (for Vāgdhenu / sanskrit-tts-web) */
+  scan?(input: string): unknown;
+
   /** Listen to live microphone audio in browser and transcribe on the fly */
   listen(options: { onTranscript: (text: string) => void; intervalSeconds?: number }): Promise<MicListener>;
 }
@@ -132,6 +139,8 @@ export async function inferTask(modelId: string): Promise<PipelineTask> {
     lower.includes('kokoro') ||
     lower.includes('speecht5') ||
     lower.includes('mms-tts') ||
+    lower.includes('sanskrit-tts') ||
+    lower.includes('vagdhenu') ||
     lower.includes('tts')
   ) {
     return 'text-to-speech';
@@ -281,6 +290,69 @@ async function webmlImpl(
     return model as unknown as LoadedModel;
   }
 
+  if (
+    modelId.toLowerCase().includes('sanskrit-tts') ||
+    modelId.toLowerCase().includes('vagdhenu')
+  ) {
+    let mod: any;
+    try {
+      const pkg = 'sanskrit-tts-web';
+      mod = await import(/* @vite-ignore */ pkg);
+    } catch {
+      const cdn = 'https://cdn.jsdelivr.net/npm/sanskrit-tts-web/+esm';
+      mod = await import(/* @vite-ignore */ cdn);
+    }
+    const initFn = mod.default || mod.sanskritTts;
+    const voice = await initFn(modelId, {
+      onProgress: options.onProgress
+        ? (s: { stage?: string; message?: string; progress?: number }) =>
+            options.onProgress?.({
+              status: s.stage === 'ready' ? 'ready' : 'downloading',
+              file: s.message,
+              loaded: s.progress ?? 0,
+              total: 100,
+              percent: s.progress ?? 0,
+            })
+        : undefined,
+    });
+
+    const runner = (input: unknown, runOptions?: Record<string, unknown>) =>
+      voice.chant(String(input), runOptions);
+
+    return Object.assign(runner, {
+      task: 'text-to-speech' as PipelineTask,
+      modelId,
+      client: null as any,
+      run: <T = unknown>(input: unknown, runOptions?: Record<string, unknown>): Promise<T> =>
+        runner(input, runOptions) as Promise<T>,
+      speak: (input: string, runOptions?: Record<string, unknown>) =>
+        voice.speak(input, runOptions),
+      chant: (input: string, runOptions?: Record<string, unknown>) =>
+        voice.chant(input, runOptions),
+      scan: (input: string) => voice.scan(input),
+      stream: (input: unknown, runOptions?: Record<string, unknown>) =>
+        voice.stream(String(input), runOptions),
+      dispose: () => {},
+      generate: async (input: unknown, runOptions?: Record<string, unknown>) =>
+        runner(input, runOptions),
+      transcribe: async () => {
+        throw new Error('transcribe is not supported for text-to-speech models');
+      },
+      classify: async () => {
+        throw new Error('classify is not supported for text-to-speech models');
+      },
+      embed: async () => {
+        throw new Error('embed is not supported for text-to-speech models');
+      },
+      detect: async () => {
+        throw new Error('detect is not supported for text-to-speech models');
+      },
+      listen: async () => {
+        throw new Error('listen is not supported for text-to-speech models');
+      },
+    }) as unknown as LoadedModel;
+  }
+
   const client = new ModelClient(options.workerUrl);
   await client.load({
     task,
@@ -306,6 +378,10 @@ async function webmlImpl(
 
     run: <T = unknown>(input: unknown, runOptions?: Record<string, unknown>): Promise<T> => {
       return runner(input, runOptions) as Promise<T>;
+    },
+
+    speak: (input: string, runOptions?: Record<string, unknown>) => {
+      return client.run('text-to-speech', input, runOptions);
     },
 
     dispose: () => {
