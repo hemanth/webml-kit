@@ -303,7 +303,9 @@ async function webmlImpl(
       mod = await import(/* @vite-ignore */ cdn);
     }
     const initFn = mod.default || mod.sanskritTts;
+    const backend = modelId.toLowerCase().includes('onnx') ? 'onnx' : 'wasm';
     const voice = await initFn(modelId, {
+      backend,
       onProgress: options.onProgress
         ? (s: { stage?: string; message?: string; progress?: number }) =>
             options.onProgress?.({
